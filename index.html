@@ -2,920 +2,1217 @@
 <html lang="id">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Nyarivilla - Pesan Vila & Resor Eksklusif</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Nyarivilla WebApp</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Font Inter & Google Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <!-- FontAwesome Icons -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Phosphor Icons -->
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <!-- Supabase JS -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    
+    <!-- PWA Manifest Injection -->
     <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    fontFamily: {
-                        sans: ['"Plus Jakarta Sans"', 'sans-serif'],
-                    },
-                    colors: {
-                        brand: {
-                            50: '#f0fdf4',
-                            100: '#dcfce7',
-                            500: '#10b981',
-                            600: '#059669',
-                            700: '#047857',
-                            800: '#065f46',
-                            900: '#064e3b',
-                        }
-                    }
-                }
-            }
-        }
+        const manifestContent = {
+            name: "Nyarivilla",
+            short_name: "Nyarivilla",
+            start_url: ".",
+            display: "standalone",
+            background_color: "#f8fafc",
+            theme_color: "#1e3a8a",
+            icons: [{
+                src: "https://placehold.co/192x192/1e3a8a/ffffff?text=NV",
+                sizes: "192x192",
+                type: "image/png"
+            }]
+        };
+        const manifestBlob = new Blob([JSON.stringify(manifestContent)], {type: 'application/json'});
+        const manifestUrl = URL.createObjectURL(manifestBlob);
+        document.write(`<link rel="manifest" href="${manifestUrl}">`);
     </script>
+
     <style>
-        body { font-family: 'Plus Jakarta Sans', sans-serif; }
-        .hide-scrollbar::-webkit-scrollbar { display: none; }
-        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        /* Glassmorphism & Custom UI Styles */
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #f0f4f8 0%, #d9e2ec 100%);
+            color: #102a43;
+            overflow-x: hidden;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .glass {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.5);
+        }
+        .glass-dark {
+            background: rgba(30, 58, 138, 0.85);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border-top: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        /* Layout Structure */
+        #app-container {
+            display: flex;
+            min-height: 100vh;
+            width: 100%;
+        }
+        #sidebar {
+            width: 280px;
+            display: none;
+            flex-direction: column;
+            position: fixed;
+            height: 100vh;
+            z-index: 50;
+        }
+        #main-content {
+            flex: 1;
+            padding-bottom: 80px; /* Space for bottom nav */
+            width: 100%;
+            transition: all 0.3s ease;
+        }
+        #bottom-nav {
+            position: fixed;
+            bottom: 0;
+            width: 100%;
+            display: flex;
+            justify-content: space-around;
+            padding: 12px 0;
+            z-index: 50;
+            padding-bottom: calc(12px + env(safe-area-inset-bottom));
+        }
+
+        /* Responsive Breakpoints */
+        @media (min-width: 768px) {
+            #sidebar { display: flex; }
+            #bottom-nav { display: none; }
+            #main-content { margin-left: 280px; padding-bottom: 24px; padding-top: 24px; }
+        }
+
+        /* Modal Overlay */
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.5);
+            backdrop-filter: blur(4px);
+            z-index: 100;
+            display: none;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* Print Area for Resi */
+        @media print {
+            body * { visibility: hidden; }
+            #print-area, #print-area * { visibility: visible; }
+            #print-area { position: absolute; left: 0; top: 0; width: 100%; background: white !important; }
+            #bottom-nav, #sidebar { display: none !important; }
+            .no-print { display: none !important; }
+        }
+
+        .hide-scroll::-webkit-scrollbar { display: none; }
+        .hide-scroll { -ms-overflow-style: none; scrollbar-width: none; }
     </style>
 </head>
-<body class="bg-slate-50 text-slate-800 antialiased min-h-screen flex flex-col">
+<body class="antialiased">
 
-    <!-- PWA manifest & service worker injection via Data URI -->
-    <script>
-        const manifestData = {
-            "name": "Nyarivilla Booking",
-            "short_name": "Nyarivilla",
-            "start_url": "./",
-            "display": "standalone",
-            "background_color": "#ffffff",
-            "theme_color": "#059669",
-            "icons": [{ "src": "https://placehold.co/192x192/1d4ed8/ffffff?text=N", "sizes": "192x192", "type": "image/png" }]
-        };
-        const manifestBlob = new Blob([JSON.stringify(manifestData)], {type: 'application/json'});
-        const manifestURL = URL.createObjectURL(manifestBlob);
-        const link = document.createElement('link');
-        link.rel = 'manifest';
-        link.href = manifestURL;
-        document.head.appendChild(link);
+<!-- Container Aplikasi -->
+<div id="root"></div>
 
-        if ('serviceWorker' in navigator) {
-            const swCode = `
-                self.addEventListener('install', e => self.skipWaiting());
-                self.addEventListener('activate', e => self.clients.claim());
-                self.addEventListener('fetch', e => e.respondWith(fetch(e.request).catch(() => caches.match(e.request))));
-            `;
-            const swBlob = new Blob([swCode], {type: 'text/javascript'});
-            navigator.serviceWorker.register(URL.createObjectURL(swBlob)).catch(() => {});
-        }
-    </script>
-
-    <!-- KONFIGURASI GOOGLE SHEETS API -->
-    <script>
-        // Masukkan URL Web App Google Apps Script Anda di sini
-        window.GS_CONFIG = {
-            webAppUrl: "https://script.google.com/macros/s/AKfycbwW6KoM4gX-DJdVXB9MdA0NL7fwwgncXhBPAF8lgPKTfywgkX0wyf4UWu5OgLzx0PFDWw/exec",
-            isMockMode: true // Set ke false jika URL Web App Google Sheets Anda sudah aktif
-        };
-    </script>
-
-    <!-- Global App State -->
-    <script>
-        window.AppState = {
-            currentView: 'explore', // explore, detail, checkout, my-bookings, admin, chat
-            selectedVilla: null,
-            user: null, // { name, role: 'admin'|'user' }
-            searchQuery: {
-                destination: '',
-                checkIn: '',
-                checkOut: '',
-                guests: 1,
-                userLat: null,
-                userLng: null,
-                radiusKm: 50
-            },
-            villas: [],
-            bookings: [],
-            chats: [
-                { id: 'c-1', sender: 'Andi Pratama', role: 'user', message: 'Halo admin, apakah kolam renangnya air hangat?', timestamp: '10:30' },
-                { id: 'c-2', sender: 'Admin Nyarivilla', role: 'admin', message: 'Halo Kak Andi, betul sekali! Kolam renang dilengkapi pemanas air.', timestamp: '10:32' }
-            ],
-            customLogoUrl: null,
-            activeChatBookingId: null
-        };
-    </script>
-
-    <!-- Header / Navbar Desktop & Tablet -->
-    <header class="bg-white border-b border-slate-200 sticky top-0 z-40 shadow-xs">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
-            <!-- Brand Logo -->
-            <div class="flex items-center space-x-3 cursor-pointer" onclick="switchView('explore')">
-                <img id="appLogoImg" src="https://placehold.co/100x100/1d4ed8/ffffff?text=N" alt="Nyarivilla Logo" class="w-12 h-12 rounded-2xl object-cover shadow-md shadow-blue-500/20">
-                <div>
-                    <span class="text-2xl font-extrabold tracking-tight text-slate-900">Nyari<span class="text-blue-600">villa</span></span>
-                    <span class="block text-[10px] text-slate-400 font-semibold uppercase tracking-widest">Resor & Villa Eksklusif</span>
-                </div>
-            </div>
-
-            <!-- Navigation Links Desktop -->
-    <nav class="hidden md:flex items-center space-x-6">
-        <button onclick="switchView('explore')" class="text-sm font-semibold text-slate-600 hover:text-blue-600 transition flex items-center space-x-1.5 py-2">
-            <i class="fa-solid fa-compass"></i><span>Jelajah</span>
-        </button>
-        <button onclick="switchView('my-bookings')" class="text-sm font-semibold text-slate-600 hover:text-blue-600 transition flex items-center space-x-1.5 py-2">
-            <i class="fa-solid fa-ticket"></i><span>Pesanan Saya</span>
-        </button>
-        <button onclick="openLiveChat()" class="text-sm font-semibold text-slate-600 hover:text-blue-600 transition flex items-center space-x-1.5 py-2 relative">
-            <i class="fa-solid fa-comments"></i><span>Live Chat</span>
-            <span class="absolute -top-1 -right-2 bg-rose-500 text-white text-[10px] font-bold px-1.5 py-0.2 rounded-full">New</span>
-        </button>
-        <div id="desktopAuthNav" class="flex items-center space-x-3 pl-4 border-l border-slate-200">
-            <!-- Dynamic Auth Rendered by JS -->
-        </div>
-    </nav>
-        </div>
-    </header>
-
-    <!-- Main Content Container -->
-    <main id="mainAppContainer" class="flex-grow max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 pb-28 md:pb-12">
-        <!-- Views injected dynamically -->
-    </main>
-
-    <!-- Mobile Bottom Navigation Bar -->
-    <nav class="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 z-50 px-6 py-2.5 flex justify-around items-center shadow-lg">
-        <button onclick="switchView('explore')" id="navMobExplore" class="flex flex-col items-center text-blue-600 transition">
-            <i class="fa-solid fa-compass text-lg mb-0.5"></i>
-            <span class="text-[11px] font-medium">Jelajah</span>
-        </button>
-        <button onclick="switchView('my-bookings')" id="navMobBookings" class="flex flex-col items-center text-slate-400 hover:text-blue-600 transition">
-            <i class="fa-solid fa-ticket text-lg mb-0.5"></i>
-            <span class="text-[11px] font-medium">Pesanan</span>
-        </button>
-        <button onclick="openLiveChat()" class="flex flex-col items-center text-slate-400 hover:text-blue-600 transition">
-            <i class="fa-solid fa-comments text-lg mb-0.5"></i>
-            <span class="text-[11px] font-medium">Chat</span>
-        </button>
-        <button onclick="handleMobileAccountClick()" id="navMobAccount" class="flex flex-col items-center text-slate-400 hover:text-blue-600 transition">
-            <i class="fa-solid fa-user text-lg mb-0.5"></i>
-            <span id="navMobAccountLabel" class="text-[11px] font-medium">Akun</span>
-        </button>
-    </nav>
-
-    <!-- FLOATING LIVE CHAT BUTTON -->
-    <div class="fixed bottom-20 right-6 md:bottom-8 z-40">
-        <button onclick="openLiveChat()" class="w-14 h-14 bg-blue-600 hover:bg-blue-700 text-white rounded-full shadow-2xl flex items-center justify-center text-xl transition transform hover:scale-105">
-            <i class="fa-solid fa-headset"></i>
-        </button>
+<!-- Modal Global untuk Alert/Notifikasi -->
+<div id="global-modal" class="modal-overlay">
+    <div class="glass bg-white p-6 rounded-2xl w-11/12 max-w-sm shadow-2xl transform scale-95 transition-transform duration-300">
+        <h3 id="modal-title" class="text-xl font-bold text-gray-800 mb-2">Pemberitahuan</h3>
+        <p id="modal-desc" class="text-gray-600 mb-6 text-sm"></p>
+        <button onclick="closeModal()" class="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-semibold transition-colors">Tutup</button>
     </div>
-    <!-- MODAL LIVE CHAT -->
-    <div id="liveChatModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 flex items-center justify-center p-4 hidden">
-        <div class="bg-white rounded-3xl max-w-lg w-full h-[85vh] flex flex-col shadow-2xl overflow-hidden relative">
-            <div class="bg-gradient-to-r from-blue-900 to-indigo-900 text-white p-4 flex justify-between items-center">
-                <div class="flex items-center space-x-3">
-                    <div class="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center font-bold">NV</div>
+</div>
+
+<script>
+/**
+ * -----------------------------------------------------------------------------
+ * KONFIGURASI APLIKASI
+ * -----------------------------------------------------------------------------
+ */
+const IS_PREVIEW = false; // UBAH KE FALSE SAAT DEPLOY UNTUK TERHUBUNG KE SUPABASE
+
+const SUPABASE_URL = "https://sqoifxsyjttsfuioisdf.supabase.co";
+const SUPABASE_ANON_KEY = "sb_publishable_Te0ftGHJ7O5bBXg8XOFDOw_MnTQuX3B";
+
+// Inisialisasi Supabase (Cegah error jika URL masih berupa placeholder bawaan)
+let supabaseClient = null;
+if (window.supabase && SUPABASE_URL.startsWith('http')) {
+    supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+}
+
+/**
+ * -----------------------------------------------------------------------------
+ * DATA STATE & DUMMY (Mode Preview)
+ * -----------------------------------------------------------------------------
+ */
+let currentUser = null; // Object tamu yang login
+let currentRole = 'guest'; // 'guest', 'tamu', 'admin'
+let currentView = 'login'; // View aktif
+let userLocation = null; // Menyimpan kordinat GPS user saat ini
+
+// Pengaturan Aplikasi Dummy
+let appSettings = {
+    nama_app: "Nyarivilla",
+    logo_url: "https://placehold.co/200x200/1e3a8a/ffffff?text=NV",
+    info_admin: "Admin Nyarivilla siap melayani Anda.",
+    no_wa_admin: "628000000000"
+};
+
+// Data Dummy Lokal
+let dummyTamu = [{ id: 't1', nama_lengkap: 'Budi Santoso', no_hp: '08123', pin_password: '123' }];
+let dummyVillas = [
+    { id: 'v1', nama_villa: 'Villa Puncak Pass', lokasi: 'Cisarua, Bogor', kordinat_gps: '-6.702,106.994', harga_weekdays: 1500000, harga_weekend: 2000000, deskripsi: 'Villa indah pemandangan gunung.', gambar_url: 'https://placehold.co/600x400/2563eb/ffffff?text=Villa+Puncak' },
+    { id: 'v2', nama_villa: 'Villa Biru Indah', lokasi: 'Lembang, Bandung', kordinat_gps: '-6.814,107.618', harga_weekdays: 1200000, harga_weekend: 1600000, deskripsi: 'Cocok untuk keluarga besar.', gambar_url: 'https://placehold.co/600x400/0ea5e9/ffffff?text=Villa+Biru' }
+];
+let dummyBookings = [];
+let dummyChats = [];
+
+/**
+ * -----------------------------------------------------------------------------
+ * UTILITIES
+ * -----------------------------------------------------------------------------
+ */
+function showModal(title, desc) {
+    document.getElementById('modal-title').innerText = title;
+    document.getElementById('modal-desc').innerText = desc;
+    const m = document.getElementById('global-modal');
+    m.style.display = 'flex';
+    setTimeout(() => { m.children[0].classList.replace('scale-95', 'scale-100'); }, 10);
+}
+function closeModal() {
+    const m = document.getElementById('global-modal');
+    m.children[0].classList.replace('scale-100', 'scale-95');
+    setTimeout(() => { m.style.display = 'none'; }, 300);
+}
+
+function formatRupiah(number) {
+    return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(number);
+}
+
+function calculateTotalPrice(checkin, checkout, priceWd, priceWe) {
+    let start = new Date(checkin);
+    let end = new Date(checkout);
+    if (start >= end) return 0;
+
+    let total = 0;
+    let current = new Date(start);
+    while (current < end) {
+        let day = current.getDay();
+        // 0 = Minggu, 6 = Sabtu -> Weekend
+        if (day === 0 || day === 6) {
+            total += Number(priceWe);
+        } else {
+            total += Number(priceWd);
+        }
+        current.setDate(current.getDate() + 1);
+    }
+    return total;
+}
+
+// Menghitung jarak (Haversine formula) dalam KM
+function getDistance(lat1, lon1, lat2, lon2) {
+    const R = 6371; // Radius bumi dalam KM
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLon = (lon2 - lon1) * Math.PI / 180;
+    const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+              Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+              Math.sin(dLon/2) * Math.sin(dLon/2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+    return (R * c).toFixed(1);
+}
+
+// Meminta akses GPS pengguna
+function getLocation() {
+    return new Promise((resolve, reject) => {
+        if (!navigator.geolocation) {
+            reject("Geolokasi tidak didukung oleh browser/perangkat ini.");
+        } else {
+            navigator.geolocation.getCurrentPosition(
+                (position) => resolve({lat: position.coords.latitude, lng: position.coords.longitude}),
+                (error) => reject("Gagal mendapatkan lokasi. Pastikan GPS aktif dan izin browser diberikan.")
+            );
+        }
+    });
+}
+
+/**
+ * -----------------------------------------------------------------------------
+ * API LAYER (Bridge: Preview vs Supabase)
+ * -----------------------------------------------------------------------------
+ */
+const API = {
+    async getSettings() {
+        if (IS_PREVIEW) return appSettings;
+        const { data, error } = await supabaseClient.from('settings').select('*').single();
+        if (data) appSettings = data;
+        return appSettings;
+    },
+    async updateSettings(newData, logoFile) {
+        if (IS_PREVIEW) {
+            appSettings = { ...appSettings, ...newData };
+            if(logoFile) appSettings.logo_url = URL.createObjectURL(logoFile);
+            return true;
+        }
+        try {
+            let logo_url = appSettings.logo_url;
+            if (logoFile) {
+                const ext = logoFile.name.split('.').pop();
+                const fileName = `logo_${Date.now()}.${ext}`;
+                const { error: upErr } = await supabaseClient.storage.from('nyarivilla_assets').upload(fileName, logoFile);
+                if (!upErr) {
+                    const { data: pubUrl } = supabaseClient.storage.from('nyarivilla_assets').getPublicUrl(fileName);
+                    logo_url = pubUrl.publicUrl;
+                }
+            }
+            await supabaseClient.from('settings').update({ ...newData, logo_url }).eq('id', 1);
+            return true;
+        } catch (e) { showModal('Error', e.message); return false; }
+    },
+    async getVillas() {
+        if (IS_PREVIEW) return dummyVillas;
+        const { data } = await supabaseClient.from('villas').select('*').order('created_at', { ascending: false });
+        return data || [];
+    },
+    async saveVilla(villa, file) {
+        if (IS_PREVIEW) {
+            if (file) villa.gambar_url = URL.createObjectURL(file);
+            else villa.gambar_url = villa.gambar_url || 'https://placehold.co/600x400/94a3b8/ffffff?text=No+Image';
+            
+            if (villa.id) {
+                let idx = dummyVillas.findIndex(v => v.id === villa.id);
+                dummyVillas[idx] = { ...dummyVillas[idx], ...villa };
+            } else {
+                villa.id = 'v' + Date.now();
+                dummyVillas.push(villa);
+            }
+            return true;
+        }
+        
+        try {
+            let gambar_url = villa.gambar_url;
+            if (file) {
+                const ext = file.name.split('.').pop();
+                const fileName = `villa_${Date.now()}.${ext}`;
+                const { error: upErr } = await supabaseClient.storage.from('nyarivilla_assets').upload(fileName, file);
+                if (!upErr) {
+                    const { data: pubUrl } = supabaseClient.storage.from('nyarivilla_assets').getPublicUrl(fileName);
+                    gambar_url = pubUrl.publicUrl;
+                }
+            }
+            if (villa.id) {
+                await supabaseClient.from('villas').update({ ...villa, gambar_url }).eq('id', villa.id);
+            } else {
+                await supabaseClient.from('villas').insert([{ ...villa, gambar_url }]);
+            }
+            return true;
+        } catch (e) { showModal('Error', e.message); return false; }
+    },
+    async deleteVilla(id) {
+        if (IS_PREVIEW) { dummyVillas = dummyVillas.filter(v => v.id !== id); return true; }
+        await supabaseClient.from('villas').delete().eq('id', id);
+        return true;
+    },
+    async getBookings() {
+        if (IS_PREVIEW) return dummyBookings;
+        // Fetch bookings with villa details
+        const { data } = await supabaseClient.from('bookings').select('*, villas(nama_villa), tamu(nama_lengkap, no_hp)').order('created_at', { ascending: false });
+        return data || [];
+    },
+    async createBooking(booking) {
+        if (IS_PREVIEW) {
+            booking.id = 'b' + Date.now();
+            booking.created_at = new Date().toISOString();
+            booking.villas = { nama_villa: dummyVillas.find(v=>v.id===booking.villa_id)?.nama_villa };
+            dummyBookings.push(booking);
+            return true;
+        }
+        await supabaseClient.from('bookings').insert([booking]);
+        return true;
+    },
+    async updateBookingStatus(id, status) {
+        if (IS_PREVIEW) {
+            let b = dummyBookings.find(x => x.id === id);
+            if(b) b.status = status;
+            return true;
+        }
+        await supabaseClient.from('bookings').update({status}).eq('id', id);
+        return true;
+    }
+};
+
+/**
+ * -----------------------------------------------------------------------------
+ * ROUTING & RENDERING (Core Logic)
+ * -----------------------------------------------------------------------------
+ */
+function navigate(view) {
+    currentView = view;
+    renderApp();
+}
+
+async function handleLogin(role, isPreviewBypass = false) {
+    if (isPreviewBypass && IS_PREVIEW) {
+        if (role === 'admin') {
+            currentRole = 'admin';
+            currentUser = { nama_lengkap: 'Administrator', id: 'admin1' };
+        } else {
+            currentRole = 'tamu';
+            currentUser = dummyTamu[0];
+        }
+        await API.getSettings(); // Load app settings
+        navigate('home');
+        return;
+    }
+
+    const no_hp = document.getElementById('login-hp')?.value;
+    const pin = document.getElementById('login-pin')?.value;
+    
+    if (role === 'admin') {
+        // Admin via Supabase Auth (Email & Pass)
+        const email = prompt("Masukkan Email Admin:");
+        const pass = prompt("Masukkan Password Admin:");
+        if(!email || !pass) return;
+        
+        if (IS_PREVIEW) {
+            showModal("Mode Preview", "Login real Supabase dinonaktifkan di mode ini.");
+        } else {
+            const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password: pass });
+            if (error) { showModal("Gagal Login", error.message); return; }
+            currentRole = 'admin';
+            currentUser = { nama_lengkap: 'Administrator' };
+            await API.getSettings();
+            navigate('home');
+        }
+    } else {
+        // Tamu via custom table
+        if (!no_hp || !pin) { showModal("Peringatan", "Harap isi No HP dan PIN."); return; }
+        
+        if (IS_PREVIEW) {
+            let t = dummyTamu.find(x => x.no_hp === no_hp && x.pin_password === pin);
+            if(t) {
+                currentRole = 'tamu'; currentUser = t;
+                await API.getSettings(); navigate('home');
+            } else showModal("Gagal", "Kredensial tamu salah (Mode Preview).");
+        } else {
+            const { data, error } = await supabaseClient.from('tamu').select('*').eq('no_hp', no_hp).eq('pin_password', pin).single();
+            if (error || !data) { showModal("Gagal", "No HP atau PIN salah."); return; }
+            currentRole = 'tamu'; currentUser = data;
+            await API.getSettings(); navigate('home');
+        }
+    }
+}
+
+async function handleRegister() {
+    const nama = prompt("Nama Lengkap Anda:");
+    const hp = prompt("No HP (sebagai Username):");
+    const pin = prompt("PIN/Password Baru (Mudah diingat):");
+    if(!nama || !hp || !pin) return;
+
+    if (IS_PREVIEW) {
+        dummyTamu.push({id: 't'+Date.now(), nama_lengkap: nama, no_hp: hp, pin_password: pin});
+        showModal("Sukses", "Registrasi berhasil, silakan login.");
+    } else {
+        const { error } = await supabaseClient.from('tamu').insert([{nama_lengkap: nama, no_hp: hp, pin_password: pin}]);
+        if (error) showModal("Gagal", error.message);
+        else showModal("Sukses", "Pendaftaran berhasil, silakan login.");
+    }
+}
+
+function handleLogout() {
+    currentRole = 'guest';
+    currentUser = null;
+    if(!IS_PREVIEW && supabaseClient) supabaseClient.auth.signOut();
+    navigate('login');
+}
+
+/**
+ * -----------------------------------------------------------------------------
+ * UI COMPONENTS RENDERER
+ * -----------------------------------------------------------------------------
+ */
+
+function renderPreviewBanner() {
+    if (!IS_PREVIEW) return '';
+    return `
+        <div class="fixed top-0 left-0 w-full bg-orange-500 text-white text-xs font-bold py-1 px-4 text-center z-[100] shadow-md flex justify-between items-center">
+            <span>⚠️ MODE PREVIEW AKTIF - Data Lokal</span>
+            <span class="text-[10px] bg-black/20 px-2 py-0.5 rounded">Ubah IS_PREVIEW = false saat deploy</span>
+        </div>
+    `;
+}
+
+function renderLogin() {
+    let previewShortcuts = IS_PREVIEW ? `
+        <div class="mt-6 pt-4 border-t border-gray-200">
+            <p class="text-xs text-center text-gray-500 mb-2">Jalan Pintas Mode Preview:</p>
+            <div class="flex gap-2">
+                <button onclick="handleLogin('admin', true)" class="flex-1 py-2 bg-slate-800 text-white rounded-xl text-sm font-semibold hover:bg-slate-700">Masuk Admin</button>
+                <button onclick="handleLogin('tamu', true)" class="flex-1 py-2 bg-blue-100 text-blue-800 rounded-xl text-sm font-semibold hover:bg-blue-200">Masuk Tamu</button>
+            </div>
+        </div>
+    ` : '';
+
+    return `
+        ${renderPreviewBanner()}
+        <div class="min-h-screen flex items-center justify-center p-4" style="background: url('https://placehold.co/1920x1080/1e3a8a/1e3a8a') center/cover;">
+            <div class="glass w-full max-w-md p-8 rounded-3xl shadow-2xl relative overflow-hidden">
+                <div class="text-center mb-8">
+                    <div class="w-20 h-20 bg-white rounded-full mx-auto shadow-inner flex items-center justify-center mb-4 p-1">
+                         <img src="${appSettings.logo_url}" class="w-full h-full object-cover rounded-full" alt="Logo">
+                    </div>
+                    <h1 class="text-3xl font-extrabold text-gray-900 tracking-tight">${appSettings.nama_app}</h1>
+                    <p class="text-gray-600 mt-2 text-sm">Masuk untuk mencari dan memesan villa idaman Anda.</p>
+                </div>
+                
+                <div class="space-y-4">
                     <div>
-                        <h3 class="font-bold text-sm">Live Support Nyarivilla</h3>
-                        <p class="text-[11px] text-emerald-400"><i class="fa-solid fa-circle text-[8px] mr-1"></i> Online</p>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Nomor HP</label>
+                        <div class="relative">
+                            <i class="ph ph-phone absolute left-3 top-3.5 text-gray-400 text-lg"></i>
+                            <input type="tel" id="login-hp" class="w-full pl-10 pr-4 py-3 bg-white/50 border border-white focus:border-blue-500 rounded-xl outline-none transition-all shadow-sm" placeholder="Contoh: 0812...">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">PIN / Password</label>
+                        <div class="relative">
+                            <i class="ph ph-lock absolute left-3 top-3.5 text-gray-400 text-lg"></i>
+                            <input type="password" id="login-pin" class="w-full pl-10 pr-4 py-3 bg-white/50 border border-white focus:border-blue-500 rounded-xl outline-none transition-all shadow-sm" placeholder="Masukkan PIN">
+                        </div>
+                    </div>
+                    <button onclick="handleLogin('tamu')" class="w-full py-3.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold shadow-lg shadow-blue-500/30 transition-all active:scale-95">Masuk sebagai Tamu</button>
+                    
+                    <div class="flex justify-between items-center text-sm mt-4">
+                        <button onclick="handleRegister()" class="text-blue-700 font-semibold hover:underline">Daftar Akun Baru</button>
+                        <button onclick="handleLogin('admin')" class="text-gray-500 hover:text-gray-800">Login Admin</button>
                     </div>
                 </div>
-                <button onclick="closeLiveChat()" class="text-white hover:text-slate-200 w-8 h-8 rounded-full bg-white/10 flex items-center justify-center transition">
-                    <i class="fa-solid fa-xmark"></i>
+
+                ${previewShortcuts}
+            </div>
+        </div>
+    `;
+}
+
+function getNavigationItems() {
+    let items = [
+        { id: 'home', icon: 'ph-house', label: 'Beranda' },
+        { id: 'bookings', icon: 'ph-calendar-check', label: 'Pesanan' },
+    ];
+    if (currentRole === 'admin') {
+        items.push({ id: 'villas', icon: 'ph-buildings', label: 'Kelola Villa' });
+        items.push({ id: 'settings', icon: 'ph-gear', label: 'Pengaturan' });
+    }
+    return items;
+}
+
+function renderSidebar() {
+    const items = getNavigationItems();
+    let navHtml = items.map(item => `
+        <button onclick="navigate('${item.id}')" class="w-full flex items-center gap-4 px-6 py-4 rounded-2xl mb-2 transition-all ${currentView === item.id ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/30' : 'text-gray-600 hover:bg-blue-50'}">
+            <i class="ph ${item.icon} text-2xl"></i>
+            <span class="font-semibold">${item.label}</span>
+        </button>
+    `).join('');
+
+    return `
+        <div id="sidebar" class="glass hidden md:flex flex-col w-72 h-screen border-r border-white/50">
+            <div class="p-8 text-center border-b border-white/30">
+                <img src="${appSettings.logo_url}" class="w-16 h-16 rounded-full mx-auto mb-3 object-cover shadow-sm">
+                <h2 class="font-bold text-xl text-gray-800">${appSettings.nama_app}</h2>
+                <p class="text-xs text-gray-500 font-medium mt-1 uppercase tracking-wider">${currentRole}</p>
+            </div>
+            <div class="flex-1 p-4 overflow-y-auto hide-scroll">
+                ${navHtml}
+            </div>
+            <div class="p-4 border-t border-white/30">
+                <button onclick="handleLogout()" class="w-full flex items-center justify-center gap-2 py-3 text-red-500 hover:bg-red-50 rounded-xl font-bold transition-colors">
+                    <i class="ph ph-sign-out text-xl"></i> Keluar
                 </button>
             </div>
+        </div>
+    `;
+}
+
+function renderBottomNav() {
+    const items = getNavigationItems();
+    let navHtml = items.map(item => `
+        <button onclick="navigate('${item.id}')" class="flex flex-col items-center justify-center w-full ${currentView === item.id ? 'text-blue-400' : 'text-gray-400 hover:text-white'} transition-colors">
+            <i class="ph ${item.icon} text-2xl mb-1 ${currentView === item.id ? 'ph-fill' : ''}"></i>
+            <span class="text-[10px] font-medium">${item.label}</span>
+        </button>
+    `).join('');
+
+    return `
+        <div id="bottom-nav" class="glass-dark text-white md:hidden rounded-t-3xl shadow-[0_-10px_40px_rgba(0,0,0,0.1)]">
+            ${navHtml}
+        </div>
+    `;
+}
+
+/**
+ * -----------------------------------------------------------------------------
+ * VIEWS LOGIC & RENDERING
+ * -----------------------------------------------------------------------------
+ */
+
+async function renderViewHome() {
+    let villas = await API.getVillas();
+    
+    // Kalkulasi jarak dan urutkan jika lokasi user diketahui (GPS Aktif)
+    if (userLocation) {
+        villas = villas.map(v => {
+            if (v.kordinat_gps) {
+                const [vLat, vLng] = v.kordinat_gps.split(',').map(Number);
+                v.distance = parseFloat(getDistance(userLocation.lat, userLocation.lng, vLat, vLng));
+            } else {
+                v.distance = 99999; // Jika tidak ada kordinat, taruh di paling bawah
+            }
+            return v;
+        }).sort((a, b) => a.distance - b.distance);
+    }
+
+    let content = `
+        <div class="p-6 md:p-10 max-w-7xl mx-auto">
+            <div class="flex justify-between items-center mb-8">
+                <div>
+                    <h1 class="text-2xl md:text-4xl font-extrabold text-gray-900">Halo, ${currentUser.nama_lengkap.split(' ')[0]}! 👋</h1>
+                    <p class="text-gray-500 mt-2">Temukan villa terbaik untuk liburan Anda.</p>
+                </div>
+                ${currentRole === 'tamu' ? `<button onclick="handleLogout()" class="md:hidden p-3 bg-white rounded-full shadow text-red-500"><i class="ph ph-sign-out text-xl"></i></button>` : ''}
+            </div>
             
-            <!-- Chat Messages Box -->
-            <div id="chatMessagesContainer" class="flex-1 p-4 overflow-y-auto space-y-3 bg-slate-50">
-                ${window.AppState.chats.map(c => `
-                    <div class="flex flex-col ${c.role === 'admin' ? 'items-start' : 'items-end'}">
-                        <span class="text-[10px] text-slate-400 mb-1 px-1">${c.sender} • ${c.timestamp}</span>
-                        <div class="max-w-[80%] p-3.5 rounded-2xl text-sm shadow-xs ${c.role === 'admin' ? 'bg-white text-slate-800 border' : 'bg-blue-600 text-white'}">
-                            ${c.message}
+            <div class="mb-6 flex gap-2">
+                <button onclick="cariVillaTerdekat()" class="flex-1 md:flex-none px-5 py-3 bg-blue-100 hover:bg-blue-200 text-blue-700 rounded-xl font-bold transition flex items-center justify-center gap-2">
+                    <i class="ph ph-crosshair text-lg"></i> ${userLocation ? 'Perbarui Lokasi GPS' : 'Cari Villa Terdekat (GPS)'}
+                </button>
+                ${userLocation ? `<button onclick="resetLokasi()" class="px-5 py-3 bg-gray-100 hover:bg-gray-200 text-gray-600 rounded-xl font-bold transition flex items-center justify-center" title="Reset Lokasi"><i class="ph ph-x text-lg"></i></button>` : ''}
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                ${villas.length === 0 ? `<div class="col-span-full text-center py-10 text-gray-400">Belum ada villa tersedia.</div>` : ''}
+                ${villas.map(v => `
+                    <div class="glass bg-white rounded-3xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 group cursor-pointer" onclick="openVillaDetail('${v.id}')">
+                        <div class="h-48 overflow-hidden relative">
+                            <img src="${v.gambar_url}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" alt="${v.nama_villa}">
+                            <div class="absolute top-4 right-4 bg-white/90 backdrop-blur px-3 py-1 rounded-full text-xs font-bold text-blue-700 shadow">
+                                ${formatRupiah(v.harga_weekdays)}<span class="text-[10px] text-gray-500 font-normal">/mlm</span>
+                            </div>
+                            ${userLocation && v.distance !== 99999 ? `
+                            <div class="absolute top-4 left-4 bg-green-500/90 backdrop-blur px-3 py-2 rounded-xl text-xs font-bold text-white shadow flex items-center gap-1">
+                                <i class="ph ph-navigation-arrow"></i> Berjarak ${v.distance} km
+                            </div>
+                            ` : ''}
+                        </div>
+                        <div class="p-5">
+                            <h3 class="font-bold text-lg text-gray-800 line-clamp-1">${v.nama_villa}</h3>
+                            <div class="flex items-center text-gray-500 text-sm mt-1 mb-3">
+                                <i class="ph ph-map-pin mr-1"></i> ${v.lokasi}
+                            </div>
+                            <div class="flex items-center justify-between mt-4 pt-4 border-t border-gray-100">
+                                <span class="text-xs text-gray-400">Weekend: ${formatRupiah(v.harga_weekend)}</span>
+                                <button class="px-4 py-2 bg-blue-50 text-blue-600 rounded-xl text-sm font-semibold">Lihat Detail</button>
+                            </div>
                         </div>
                     </div>
                 `).join('')}
             </div>
-
-            <!-- Chat Input Form -->
-            <form onsubmit="sendChatMessage(event)" class="p-3 bg-white border-t flex items-center space-x-2">
-                <input type="text" id="chatInputText" required placeholder="Tulis pesan ke admin..." class="flex-1 px-4 py-3 bg-slate-100 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
-                <button type="submit" class="w-12 h-12 bg-blue-600 hover:bg-blue-700 text-white rounded-xl flex items-center justify-center shadow-md transition">
-                    <i class="fa-solid fa-paper-plane"></i>
-                </button>
-            </form>
         </div>
-    </div>
+    `;
+    return content;
+}
 
-    <!-- MODAL CUSTOM NOTIFICATION -->
-    <div id="customModalAlert" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 flex items-center justify-center p-4 hidden">
-        <div class="bg-white rounded-3xl max-w-sm w-full p-6 text-center shadow-2xl">
-            <div id="customModalIcon" class="w-14 h-14 bg-blue-100 text-blue-600 rounded-2xl flex items-center justify-center mx-auto mb-4 text-2xl">
-                <i class="fa-solid fa-circle-check"></i>
+async function cariVillaTerdekat() {
+    const btn = document.querySelector('button[onclick="cariVillaTerdekat()"]');
+    if(btn) { btn.innerHTML = '<i class="ph ph-spinner animate-spin text-lg"></i> Mengakses GPS...'; btn.disabled = true; }
+    
+    try {
+        userLocation = await getLocation();
+        renderApp();
+    } catch (e) {
+        showModal('Gagal', e);
+        if(btn) { btn.innerHTML = '<i class="ph ph-crosshair text-lg"></i> Cari Villa Terdekat (GPS)'; btn.disabled = false; }
+    }
+}
+
+function resetLokasi() {
+    userLocation = null;
+    renderApp();
+}
+
+// Global variable untuk nyimpen data villa yang lg diliat
+let currentSelectedVilla = null;
+
+async function openVillaDetail(id) {
+    const villas = await API.getVillas();
+    currentSelectedVilla = villas.find(v => v.id === id);
+    if(!currentSelectedVilla) return;
+    
+    // Tampilkan Modal/Overlay Detail
+    const modalHtml = `
+        <div id="villa-detail-modal" class="fixed inset-0 bg-white z-[200] overflow-y-auto flex flex-col md:flex-row">
+            <!-- Tutup Button -->
+            <button onclick="document.getElementById('villa-detail-modal').remove()" class="absolute top-4 left-4 z-10 w-10 h-10 bg-black/30 backdrop-blur text-white rounded-full flex items-center justify-center hover:bg-black/50 transition">
+                <i class="ph ph-arrow-left text-xl"></i>
+            </button>
+
+            <!-- Image Section -->
+            <div class="w-full md:w-1/2 h-64 md:h-full relative">
+                <img src="${currentSelectedVilla.gambar_url}" class="w-full h-full object-cover">
             </div>
-            <h4 id="customModalTitle" class="text-lg font-bold text-slate-900 mb-1">Berhasil!</h4>
-            <p id="customModalMessage" class="text-sm text-slate-500 mb-6">Pesan informasi sistem.</p>
-            <button onclick="closeCustomModal()" class="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl shadow-md transition">
-                Mengerti
-            </button>
-        </div>
-    </div>
 
-    <!-- MODAL TAMBAH VILA -->
-    <div id="addVillaModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 flex items-center justify-center p-4 hidden">
-        <div class="bg-white rounded-3xl max-w-xl w-full max-h-[90vh] overflow-y-auto p-6 sm:p-8 shadow-2xl relative">
-            <button onclick="closeAddVillaModal()" class="absolute top-5 right-5 text-slate-400 hover:text-slate-700 w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center transition">
-                <i class="fa-solid fa-xmark"></i>
-            </button>
-            <h3 class="text-xl font-extrabold text-slate-900 mb-1">Tambah Vila Baru & Upload Gambar</h3>
-            <form onsubmit="submitNewVilla(event)" class="space-y-4 mt-4">
-                <div>
-                    <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Nama Vila</label>
-                    <input type="text" id="newVillaName" required placeholder="cth: Nyarivilla Sunset" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm">
-                </div>
-                <div>
-                    <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Lokasi</label>
-                    <input type="text" id="newVillaLocation" required placeholder="cth: Puncak, Bogor" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm">
-                </div>
-                <div class="grid grid-cols-2 gap-4">
-                    <div>
-                        <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Harga (Rp/malam)</label>
-                        <input type="number" id="newVillaPrice" required placeholder="1500000" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm">
-                    </div>
-                    <div>
-                        <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Max Tamu</label>
-                        <input type="number" id="newVillaMaxGuests" required value="6" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm">
-                    </div>
-                </div>
-                <div>
-                    <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Upload Gambar Vila (Dari Perangkat)</label>
-                    <input type="file" id="newVillaImageFile" accept="image/*" onchange="previewVillaImage(event)" class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100">
-                    <input type="hidden" id="newVillaImageUrl" value="https://images.unsplash.com/photo-1580587771525-78b9dba3b914?auto=format&fit=crop&w=1000&q=80">
-                    <div id="villaImagePreviewContainer" class="mt-3 hidden">
-                        <img id="villaImagePreview" class="w-full h-36 object-cover rounded-xl border">
-                    </div>
-                </div>
-                <div>
-                    <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Deskripsi</label>
-                    <textarea id="newVillaDesc" rows="3" required class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm"></textarea>
-                </div>
-                <button type="submit" class="w-full py-4 bg-blue-600 text-white font-bold rounded-xl shadow-lg">Simpan ke Google Sheets</button>
-            </form>
-        </div>
-    </div>
-
-    <!-- SCRIPT APLIKASI UTAMA -->
-    <script>
-        const MOCK_VILLAS = [
-            {
-                id: 'v-1',
-                name: 'Nyarivilla Panorama Puncak',
-                location: 'Cisarua, Puncak, Bogor',
-                lat: -6.6912,
-                lng: 106.9452,
-                price: 1850000,
-                rating: 4.9,
-                reviewsCount: 35,
-                bedrooms: 4,
-                bathrooms: 3,
-                maxGuests: 10,
-                image: 'https://images.unsplash.com/photo-1580587771525-78b9dba3b914?auto=format&fit=crop&w=1000&q=80',
-                description: 'Vila mewah dengan panorama pegunungan menakjubkan dan kolam renang privat.'
-            },
-            {
-                id: 'v-2',
-                name: 'Green Bamboo Resort',
-                location: 'Megamendung, Bogor',
-                lat: -6.6541,
-                lng: 106.9023,
-                price: 1200000,
-                rating: 4.7,
-                reviewsCount: 19,
-                bedrooms: 2,
-                bathrooms: 2,
-                maxGuests: 6,
-                image: 'https://images.unsplash.com/photo-1512917774080-9991f1c4c750?auto=format&fit=crop&w=1000&q=80',
-                description: 'Vila kayu estetik asri di tengah sejuknya udara pegunungan.'
-            }
-        ];
-
-        const MOCK_BOOKINGS = [
-            {
-                id: 'b-1',
-                villaId: 'v-1',
-                villaName: 'Nyarivilla Panorama Puncak',
-                guestName: 'Andi Pratama',
-                checkIn: '2026-06-12',
-                checkOut: '2026-06-14',
-                guests: 4,
-                totalPrice: 3700000,
-                status: 'Dikonfirmasi'
-            }
-        ];
-
-        window.addEventListener('DOMContentLoaded', () => {
-            loadDataFromGoogleSheets();
-        });
-
-        async function loadDataFromGoogleSheets() {
-            if (window.GS_CONFIG.isMockMode) {
-                window.AppState.villas = MOCK_VILLAS;
-                window.AppState.bookings = MOCK_BOOKINGS;
-                initAppUI();
-                return;
-            }
-
-            try {
-                const response = await fetch(window.GS_CONFIG.webAppUrl + "?action=getData");
-                const data = await response.json();
-                window.AppState.villas = data.villas || MOCK_VILLAS;
-                window.AppState.bookings = data.bookings || MOCK_BOOKINGS;
-                initAppUI();
-            } catch(e) {
-                console.error("Gagal memuat dari Google Sheets:", e);
-                window.AppState.villas = MOCK_VILLAS;
-                window.AppState.bookings = MOCK_BOOKINGS;
-                initAppUI();
-            }
-        }
-
-        window.initAppUI = function() {
-            updateNavbarAuthUI();
-            renderCurrentView();
-        }
-
-        window.switchView = function(viewName, param = null) {
-            window.AppState.currentView = viewName;
-            if (viewName === 'detail' && param) {
-                window.AppState.selectedVilla = window.AppState.villas.find(v => v.id === param);
-            }
-            renderCurrentView();
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-        }
-
-        function renderExploreView() {
-            const query = window.AppState.searchQuery;
-            let displayVillas = [...window.AppState.villas];
-
-            if (query.destination) {
-                const term = query.destination.toLowerCase();
-                displayVillas = displayVillas.filter(v => v.name.toLowerCase().includes(term) || v.location.toLowerCase().includes(term));
-            }
-
-            if (query.userLat !== null && query.userLng !== null) {
-                displayVillas.forEach(v => {
-                    v.distance = calculateDistance(query.userLat, query.userLng, Number(v.lat), Number(v.lng));
-                });
-                displayVillas.sort((a, b) => a.distance - b.distance);
-            }
-
-            return `
-                <div class="space-y-8">
-                    <!-- Hero Banner & Search Bar -->
-                    <div class="bg-gradient-to-r from-blue-900 to-indigo-900 rounded-3xl p-6 sm:p-10 text-white shadow-xl relative overflow-hidden">
-                        <div class="relative z-10 max-w-2xl space-y-3">
-                            <h1 class="text-3xl sm:text-4xl font-extrabold tracking-tight">Temukan Vila Impian Anda</h1>
-                            <p class="text-sm text-blue-100">Jelajahi resor eksklusif dengan fasilitas terbaik di lokasi pilihan.</p>
+            <!-- Content Section -->
+            <div class="w-full md:w-1/2 p-6 md:p-12 pb-32 md:pb-12 bg-white flex flex-col">
+                <div class="flex-1">
+                    <span class="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-xs font-bold uppercase tracking-wider mb-4 inline-block">Tersedia</span>
+                    <h2 class="text-3xl font-extrabold text-gray-900 mb-2">${currentSelectedVilla.nama_villa}</h2>
+                    <p class="text-gray-500 flex items-center gap-2 mb-6"><i class="ph ph-map-pin-line text-lg"></i> ${currentSelectedVilla.lokasi}</p>
+                    
+                    <div class="flex gap-4 mb-6">
+                        <div class="flex-1 p-4 bg-gray-50 rounded-2xl border border-gray-100">
+                            <p class="text-xs text-gray-500 mb-1">Harga Weekdays</p>
+                            <p class="font-bold text-gray-800">${formatRupiah(currentSelectedVilla.harga_weekdays)}</p>
                         </div>
-                        <div class="mt-6 bg-white/10 backdrop-blur-md p-4 rounded-2xl grid grid-cols-1 sm:grid-cols-12 gap-3 items-center">
-                            <div class="sm:col-span-5 relative">
-                                <i class="fa-solid fa-magnifying-glass absolute left-4 top-3.5 text-slate-400"></i>
-                                <input type="text" id="searchInputDest" placeholder="Cari lokasi atau nama vila..." value="${query.destination}" oninput="window.AppState.searchQuery.destination = this.value" class="w-full pl-11 pr-4 py-3 bg-white text-slate-900 rounded-xl text-sm focus:outline-none">
-                            </div>
-                            <div class="sm:col-span-4">
-                                <input type="number" placeholder="Max Tamu" value="${query.guests}" onchange="window.AppState.searchQuery.guests = this.value" class="w-full px-4 py-3 bg-white text-slate-900 rounded-xl text-sm focus:outline-none">
-                            </div>
-                            <div class="sm:col-span-3">
-                                <button onclick="requestUserGPSLocation()" class="w-full py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl shadow-md transition flex items-center justify-center space-x-2 text-xs">
-                                    <i class="fa-solid fa-crosshairs"></i>
-                                    <span>${query.userLat !== null ? 'GPS Aktif' : 'Gunakan GPS'}</span>
-                                </button>
-                            </div>
-                        </div>
-                        ${query.userLat !== null ? `<div class="mt-3 text-xs text-emerald-300 font-semibold"><i class="fa-solid fa-check-circle mr-1"></i> Menampilkan vila diurutkan dari yang terdekat dengan lokasi Anda.</div>` : ''}
-                    </div>
-
-                    <!-- Villa Cards Grid -->
-                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                        ${displayVillas.map(villa => `
-                            <div onclick="switchView('detail', '${villa.id}')" class="bg-white rounded-3xl overflow-hidden border border-slate-200 hover:shadow-xl transition cursor-pointer flex flex-col relative">
-                                ${villa.distance !== undefined ? `<span class="absolute top-3 left-3 bg-slate-900/80 backdrop-blur-md text-white text-[11px] font-bold px-3 py-1 rounded-full"><i class="fa-solid fa-location-arrow mr-1"></i>${villa.distance.toFixed(1)} km dari Anda</span>` : ''}
-                                <div class="h-56 overflow-hidden">
-                                    <img src="${villa.image}" class="w-full h-full object-cover">
-                                </div>
-                                <div class="p-5 flex-1 flex flex-col justify-between">
-                                    <div>
-                                        <span class="text-xs text-blue-600 font-bold">${villa.location}</span>
-                                        <h3 class="font-extrabold text-slate-900 text-lg mt-1">${villa.name}</h3>
-                                    </div>
-                                    <div class="mt-4 pt-4 border-t flex justify-between items-center">
-                                        <span class="text-lg font-extrabold text-blue-600">Rp ${Number(villa.price).toLocaleString('id-ID')}</span>
-                                        <span class="px-4 py-2 bg-blue-50 text-blue-600 font-bold text-xs rounded-xl">Pesan</span>
-                                    </div>
-                                </div>
-                            </div>
-                        `).join('')}
-                    </div>
-                </div>
-            `;
-        }
-
-        function renderCurrentView() {
-            const container = document.getElementById('mainAppContainer');
-            const view = window.AppState.currentView;
-
-            if (view === 'explore') container.innerHTML = renderExploreView();
-            else if (view === 'detail') container.innerHTML = renderDetailView();
-            else if (view === 'checkout') container.innerHTML = renderCheckoutView();
-            else if (view === 'my-bookings') container.innerHTML = renderMyBookingsView();
-            else if (view === 'admin') container.innerHTML = renderAdminDashboardView();
-        }
-        window.openLiveChat = function() {
-            document.getElementById('liveChatModal').classList.remove('hidden');
-            const box = document.getElementById('chatMessagesContainer');
-            box.scrollTop = box.scrollHeight;
-        }
-
-        window.closeLiveChat = function() {
-            document.getElementById('liveChatModal').classList.add('hidden');
-        }
-
-        window.sendChatMessage = function(e) {
-            e.preventDefault();
-            const input = document.getElementById('chatInputText');
-            const text = input.value.trim();
-            if(!text) return;
-
-            const senderName = window.AppState.user ? window.AppState.user.name : 'Tamu Pengunjung';
-            const userRole = window.AppState.user && window.AppState.user.role === 'admin' ? 'admin' : 'user';
-
-            window.AppState.chats.push({
-                id: 'c-' + Date.now(),
-                sender: senderName,
-                role: userRole,
-                message: text,
-                timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-            });
-
-            input.value = '';
-            
-            // Re-render chat modal
-            const box = document.getElementById('chatMessagesContainer');
-            box.innerHTML = window.AppState.chats.map(c => `
-                <div class="flex flex-col ${c.role === 'admin' ? 'items-start' : 'items-end'}">
-                    <span class="text-[10px] text-slate-400 mb-1 px-1">${c.sender} • ${c.timestamp}</span>
-                    <div class="max-w-[80%] p-3.5 rounded-2xl text-sm shadow-xs ${c.role === 'admin' ? 'bg-white text-slate-800 border' : 'bg-blue-600 text-white'}">
-                        ${c.message}
-                    </div>
-                </div>
-            `).join('');
-            box.scrollTop = box.scrollHeight;
-        }
-
-        function renderAdminDashboardView() {
-            return `
-                <div class="max-w-5xl mx-auto space-y-6">
-                    <div class="flex justify-between items-center">
-                        <h1 class="text-2xl font-extrabold">Dashboard Admin (Google Sheets)</h1>
-                        <button onclick="openAddVillaModal()" class="px-5 py-3 bg-blue-600 text-white font-bold text-xs rounded-xl"><i class="fa-solid fa-plus mr-2"></i>Tambah Vila</button>
-                    </div>
-
-                    <!-- PANEL LIVE CHAT MASUK -->
-                    <div class="bg-white p-6 rounded-3xl border shadow-sm space-y-4">
-                        <div class="flex justify-between items-center">
-                            <h3 class="text-lg font-bold text-slate-900"><i class="fa-solid fa-comments text-blue-600 mr-2"></i>Pusat Pesan Live Chat Tamu</h3>
-                            <button onclick="openLiveChat()" class="px-4 py-2 bg-blue-50 text-blue-600 font-bold text-xs rounded-xl">Buka Chat Box</button>
-                        </div>
-                        <p class="text-xs text-slate-500">Total percakapan aktif: ${window.AppState.chats.length} pesan.</p>
-                    </div>
-                        <div class="sm:col-span-3">
-                            <button onclick="requestUserGPSLocation()" class="w-full py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl shadow-md transition flex items-center justify-center space-x-2 text-xs">
-                                <i class="fa-solid fa-crosshairs"></i>
-                                <span>${query.userLat !== null ? 'GPS Aktif' : 'Gunakan GPS'}</span>
-                            </button>
-                        </div>
-                        <div class="sm:col-span-2">
-                            <button onclick="renderCurrentView()" class="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl shadow-md transition">Cari</button>
+                        <div class="flex-1 p-4 bg-orange-50 rounded-2xl border border-orange-100">
+                            <p class="text-xs text-orange-600 mb-1">Harga Weekend</p>
+                            <p class="font-bold text-gray-800">${formatRupiah(currentSelectedVilla.harga_weekend)}</p>
                         </div>
                     </div>
-                    ${query.userLat !== null ? `<div class="mt-3 text-xs text-emerald-300 font-semibold"><i class="fa-solid fa-check-circle mr-1"></i> Menampilkan vila diurutkan dari yang terdekat dengan lokasi Anda.</div>` : ''}
-                </div>
-                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                    ${displayVillas.map(villa => `
-                        <div onclick="switchView('detail', '${villa.id}')" class="bg-white rounded-3xl overflow-hidden border border-slate-200 hover:shadow-xl transition cursor-pointer flex flex-col relative">
-                            ${villa.distance !== undefined ? `<span class="absolute top-3 left-3 bg-slate-900/80 backdrop-blur-md text-white text-[11px] font-bold px-3 py-1 rounded-full"><i class="fa-solid fa-location-arrow mr-1"></i>${villa.distance.toFixed(1)} km dari Anda</span>` : ''}
-                            <div class="h-56 overflow-hidden">
-                                <img src="${villa.image}" class="w-full h-full object-cover">
-                            </div>
-                            <div class="p-5 flex-1 flex flex-col justify-between">
-                                <div>
-                                    <span class="text-xs text-blue-600 font-bold">${villa.location}</span>
-                                    <h3 class="font-extrabold text-slate-900 text-lg mt-1">${villa.name}</h3>
-                                </div>
-                                <div class="mt-4 pt-4 border-t flex justify-between items-center">
-                                    <span class="text-lg font-extrabold text-blue-600">Rp ${Number(villa.price).toLocaleString('id-ID')}</span>
-                                    <span class="px-4 py-2 bg-blue-50 text-blue-600 font-bold text-xs rounded-xl">Pesan</span>
-                                </div>
-                            </div>
-                        </div>
-                    `).join('')}
-                </div>
-            `;
-        }
 
-        // Fungsi Kalkulator Jarak Haversine
-        function calculateDistance(lat1, lon1, lat2, lon2) {
-            const R = 6371; // Radius bumi dalam kilometer
-            const dLat = (lat2 - lat1) * Math.PI / 180;
-            const dLon = (lon2 - lon1) * Math.PI / 180;
-            const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
-                      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
-                      Math.sin(dLon/2) * Math.sin(dLon/2);
-            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-            return R * c;
-        }
-
-        window.requestUserGPSLocation = function() {
-            if (!navigator.geolocation) {
-                showCustomModal("GPS Error", "Browser Anda tidak mendukung geolokasi.", "error");
-                return;
-            }
-            showCustomModal("GPS", "Mengakses posisi GPS perangkat Anda...", "success");
-            navigator.geolocation.getCurrentPosition(
-                (position) => {
-                    window.AppState.searchQuery.userLat = position.coords.latitude;
-                    window.AppState.searchQuery.userLng = position.coords.longitude;
-                    closeCustomModal();
-                    renderCurrentView();
-                },
-                (error) => {
-                    closeCustomModal();
-                    showCustomModal("GPS Gagal", "Gagal mendapatkan lokasi GPS. Pastikan izin lokasi aktif.", "error");
-                },
-                { enableHighAccuracy: true, timeout: 10000 }
-            );
-        }
-
-        function renderDetailView() {
-            const villa = window.AppState.selectedVilla;
-            if (!villa) return `<div>Vila tidak ditemukan.</div>`;
-            
-            // Ambil daftar tanggal yang sudah terbooking untuk vila ini
-            const bookedRanges = window.AppState.bookings
-                .filter(b => b.villaId === villa.id && b.status !== 'Ditolak' && b.status !== 'Dibatalkan')
-                .map(b => ({ checkIn: b.checkIn, checkOut: b.checkOut, guest: b.guestName }));
-
-            return `
-                <div class="max-w-4xl mx-auto space-y-6">
-                    <button onclick="switchView('explore')" class="px-4 py-2 bg-white border rounded-xl text-xs font-bold"><i class="fa-solid fa-arrow-left mr-2"></i>Kembali</button>
-                    <h1 class="text-3xl font-extrabold">${villa.name}</h1>
-                    <img src="${villa.image}" class="w-full h-80 object-cover rounded-3xl">
-                    <div class="bg-white p-6 rounded-3xl border space-y-6">
-                        <p class="text-sm text-slate-600">${villa.description}</p>
-                        <div class="text-xl font-bold text-blue-600">Rp ${Number(villa.price).toLocaleString('id-ID')} / malam</div>
-                        
-                        <!-- KALENDER KETERSEDIAAN / BOOKED DATES -->
-                        <div class="border-t pt-6">
-                            <h3 class="text-base font-bold text-slate-900 mb-3"><i class="fa-solid fa-calendar-days text-blue-600 mr-2"></i>Kalender Ketersediaan (Booking Schedule)</h3>
-                            <p class="text-xs text-slate-500 mb-4">Pastikan tanggal pilihan Anda belum terbooking oleh tamu lain di bawah ini:</p>
-                            ${bookedRanges.length === 0 ? `
-                                <div class="p-4 bg-emerald-50 text-emerald-800 text-xs font-semibold rounded-2xl border border-emerald-200">
-                                    <i class="fa-solid fa-circle-check mr-1.5"></i> Vila ini sepenuhnya tersedia pada semua tanggal!
-                                </div>
-                            ` : `
-                                <div class="space-y-2">
-                                    ${bookedRanges.map(r => `
-                                        <div class="p-3 bg-rose-50 text-rose-800 text-xs font-bold rounded-xl border border-rose-200 flex justify-between items-center">
-                                            <span><i class="fa-solid fa-ban mr-1.5"></i> ${r.checkIn} s/d ${r.checkOut}</span>
-                                            <span class="text-[11px] bg-rose-200 text-rose-900 px-2 py-0.5 rounded-md">Sudah Terbooking</span>
-                                        </div>
-                                    `).join('')}
-                                </div>
-                            `}
-                        </div>
-
-                        <button onclick="proceedToCheckout()" class="w-full py-4 bg-blue-600 text-white font-bold rounded-xl shadow-lg">Pesan Vila Ini</button>
-                    </div>
-                </div>
-            `;
-        }
-
-        window.proceedToCheckout = function() {
-            window.AppState.currentView = 'checkout';
-            renderCurrentView();
-        }
-
-        function renderCheckoutView() {
-            const villa = window.AppState.selectedVilla;
-            return `
-                <div class="max-w-xl mx-auto bg-white rounded-3xl p-8 border space-y-6">
-                    <h2 class="text-2xl font-extrabold">Konfirmasi Pemesanan</h2>
-                    <form onsubmit="finalizeBooking(event)" class="space-y-4">
-                        <div>
-                            <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Nama Tamu</label>
-                            <input type="text" id="chkName" required class="w-full px-4 py-3 bg-slate-50 border rounded-xl text-sm" value="${window.AppState.user ? window.AppState.user.name : ''}">
-                        </div>
-                        <div>
-                            <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Tanggal Check-In</label>
-                            <input type="date" id="chkIn" required class="w-full px-4 py-3 bg-slate-50 border rounded-xl text-sm">
-                        </div>
-                        <div>
-                            <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Tanggal Check-Out</label>
-                            <input type="date" id="chkOut" required class="w-full px-4 py-3 bg-slate-50 border rounded-xl text-sm">
-                        </div>
-                        <button type="submit" class="w-full py-4 bg-blue-600 text-white font-bold rounded-xl shadow-lg">Kirim Pesanan ke Google Sheets</button>
-                    </form>
-                </div>
-            `;
-        }
-
-        window.finalizeBooking = async function(e) {
-            e.preventDefault();
-            const guestName = document.getElementById('chkName').value;
-            const checkIn = document.getElementById('chkIn').value;
-            const checkOut = document.getElementById('chkOut').value;
-            const villa = window.AppState.selectedVilla;
-
-            const newBooking = {
-                id: 'b-' + Date.now(),
-                villaId: villa.id,
-                villaName: villa.name,
-                guestName,
-                checkIn,
-                checkOut,
-                totalPrice: villa.price,
-                status: 'Menunggu Konfirmasi'
-            };
-
-            window.AppState.bookings.unshift(newBooking);
-            showCustomModal("Sukses", "Pesanan berhasil disimpan.", "success");
-            switchView('my-bookings');
-        }
-
-        function renderMyBookingsView() {
-            return `
-                <div class="max-w-4xl mx-auto space-y-4">
-                    <h1 class="text-2xl font-extrabold">Pesanan Saya</h1>
-                    ${window.AppState.bookings.map(b => `
-                        <div class="bg-white p-6 rounded-3xl border flex justify-between items-center">
+                    <h3 class="font-bold text-gray-800 mb-2">Deskripsi</h3>
+                    <p class="text-gray-600 text-sm leading-relaxed mb-8">${currentSelectedVilla.deskripsi || 'Belum ada deskripsi.'}</p>
+                    
+                    ${currentRole === 'tamu' ? `
+                    <div class="glass p-5 rounded-2xl border border-blue-100 bg-blue-50/50">
+                        <h3 class="font-bold text-gray-800 mb-4 flex items-center gap-2"><i class="ph ph-calendar-plus text-blue-600"></i> Buat Pesanan</h3>
+                        <div class="grid grid-cols-2 gap-4 mb-4">
                             <div>
-                                <h3 class="font-bold text-lg">${b.villaName}</h3>
-                                <p class="text-xs text-slate-500">${b.checkIn} s/d ${b.checkOut} • Atas Nama: ${b.guestName}</p>
+                                <label class="block text-xs font-semibold text-gray-600 mb-1">Check-in</label>
+                                <input type="date" id="book-checkin" class="w-full p-2.5 rounded-xl border border-gray-200 text-sm outline-none focus:border-blue-500 bg-white" onchange="calculateBookingPreview()">
                             </div>
-                            <span class="px-3 py-1 bg-blue-100 text-blue-800 text-xs font-bold rounded-full">${b.status}</span>
+                            <div>
+                                <label class="block text-xs font-semibold text-gray-600 mb-1">Check-out</label>
+                                <input type="date" id="book-checkout" class="w-full p-2.5 rounded-xl border border-gray-200 text-sm outline-none focus:border-blue-500 bg-white" onchange="calculateBookingPreview()">
+                            </div>
                         </div>
-                    `).join('')}
+                        <div class="flex justify-between items-center mb-4">
+                            <span class="text-sm text-gray-500">Estimasi Total:</span>
+                            <span id="book-total" class="text-xl font-bold text-blue-600">Rp 0</span>
+                        </div>
+                        <button onclick="submitBooking()" class="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold shadow-lg shadow-blue-500/30 transition-all">Pesan Sekarang</button>
+                    </div>
+                    ` : `
+                    <div class="p-4 bg-yellow-50 text-yellow-800 rounded-xl text-sm border border-yellow-200">
+                        Anda login sebagai Admin. Buka menu Kelola Villa untuk memblokir tanggal atau mengedit data ini.
+                    </div>
+                    `}
                 </div>
-            `;
-        }
+            </div>
+        </div>
+    `;
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+    
+    // Set min date to today
+    const today = new Date().toISOString().split('T')[0];
+    if(document.getElementById('book-checkin')) {
+        document.getElementById('book-checkin').min = today;
+        document.getElementById('book-checkout').min = today;
+    }
+}
 
-        function renderAdminDashboardView() {
-            return `
-                <div class="max-w-5xl mx-auto space-y-6">
-                    <div class="flex justify-between items-center">
-                        <h1 class="text-2xl font-extrabold">Dashboard Admin (Google Sheets)</h1>
-                        <button onclick="openAddVillaModal()" class="px-5 py-3 bg-blue-600 text-white font-bold text-xs rounded-xl"><i class="fa-solid fa-plus mr-2"></i>Tambah Vila</button>
-                    </div>
+function calculateBookingPreview() {
+    const ci = document.getElementById('book-checkin').value;
+    const co = document.getElementById('book-checkout').value;
+    if(ci && co && currentSelectedVilla) {
+        const total = calculateTotalPrice(ci, co, currentSelectedVilla.harga_weekdays, currentSelectedVilla.harga_weekend);
+        document.getElementById('book-total').innerText = formatRupiah(total);
+    }
+}
 
-                    <!-- PANEL KELOLA KETERSEDIAAN & JADWAL BOOKING -->
-                    <div class="bg-white p-6 rounded-3xl border shadow-sm space-y-4">
-                        <h3 class="text-lg font-bold text-slate-900"><i class="fa-solid fa-calendar-check text-blue-600 mr-2"></i>Pengelola Tanggal & Jadwal Terbooking</h3>
-                        <p class="text-xs text-slate-500">Daftar seluruh jadwal tanggal yang telah dipesan oleh tamu pada masing-masing vila.</p>
-                        <div class="space-y-3">
-                            ${window.AppState.bookings.length === 0 ? `<p class="text-xs text-slate-400">Belum ada jadwal booking.</p>` : window.AppState.bookings.map(b => `
-                                <div class="p-4 bg-slate-50 rounded-2xl border flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
-                                    <div>
-                                        <h4 class="font-bold text-sm text-slate-900">${b.villaName}</h4>
-                                        <p class="text-xs text-slate-500 mt-0.5"><i class="fa-regular fa-calendar mr-1"></i> ${b.checkIn} s/d ${b.checkOut} • Tamu: <span class="font-semibold text-slate-700">${b.guestName}</span></p>
-                                    </div>
-                                    <div class="flex items-center space-x-2">
-                                        <span class="px-3 py-1 bg-amber-100 text-amber-800 text-xs font-bold rounded-full">${b.status}</span>
-                                        <button onclick="updateBookingStatus('${b.id}', 'Dikonfirmasi')" class="px-3 py-1 bg-emerald-600 text-white text-xs font-bold rounded-xl">Konfirmasi</button>
-                                        <button onclick="updateBookingStatus('${b.id}', 'Ditolak')" class="px-3 py-1 bg-rose-600 text-white text-xs font-bold rounded-xl">Tolak</button>
-                                    </div>
-                                </div>
-                            `).join('')}
+async function submitBooking() {
+    const ci = document.getElementById('book-checkin').value;
+    const co = document.getElementById('book-checkout').value;
+    if(!ci || !co) { showModal('Peringatan', 'Harap lengkapi tanggal check-in dan check-out.'); return; }
+    if(new Date(ci) >= new Date(co)) { showModal('Peringatan', 'Tanggal check-out harus setelah check-in.'); return; }
+
+    const total = calculateTotalPrice(ci, co, currentSelectedVilla.harga_weekdays, currentSelectedVilla.harga_weekend);
+    
+    // Cek Ketersediaan Sederhana (Apakah ada status confirmed/blocked di tanggal yang bersinggungan)
+    const allB = await API.getBookings();
+    const isConflict = allB.some(b => 
+        b.villa_id === currentSelectedVilla.id && 
+        b.status !== 'pending' &&
+        ((ci >= b.tgl_checkin && ci < b.tgl_checkout) || (co > b.tgl_checkin && co <= b.tgl_checkout))
+    );
+
+    if(isConflict) {
+        showModal('Mohon Maaf', 'Tanggal tersebut sudah terpesan atau diblokir. Silakan pilih tanggal lain.');
+        return;
+    }
+
+    const payload = {
+        tamu_id: currentUser.id,
+        villa_id: currentSelectedVilla.id,
+        tgl_checkin: ci,
+        tgl_checkout: co,
+        total_harga: total,
+        status: 'pending'
+    };
+
+    const res = await API.createBooking(payload);
+    if(res) {
+        document.getElementById('villa-detail-modal').remove();
+        showModal('Berhasil', 'Pesanan berhasil dibuat! Silakan cek menu Pesanan untuk melihat status.');
+        navigate('bookings');
+    }
+}
+
+async function renderViewBookings() {
+    let bookings = await API.getBookings();
+    
+    // Filter untuk tamu: hanya lihat pesanannya sendiri
+    if (currentRole === 'tamu') {
+        bookings = bookings.filter(b => b.tamu_id === currentUser.id && b.status !== 'blocked');
+    }
+
+    let content = `
+        <div class="p-6 md:p-10 max-w-7xl mx-auto">
+            <h1 class="text-2xl md:text-3xl font-extrabold text-gray-900 mb-2">Daftar Pesanan</h1>
+            <p class="text-gray-500 mb-8">Kelola dan pantau status pemesanan ${currentRole === 'admin' ? 'semua tamu' : 'Anda'}.</p>
+            
+            <div class="space-y-4">
+                ${bookings.length === 0 ? `<div class="p-8 text-center text-gray-400 bg-white/50 rounded-3xl border border-dashed border-gray-300">Belum ada data pesanan.</div>` : ''}
+                ${bookings.map(b => {
+                    const isBlocked = b.status === 'blocked';
+                    const statusColor = b.status === 'confirmed' ? 'bg-green-100 text-green-700 border-green-200' : 
+                                      b.status === 'blocked' ? 'bg-red-100 text-red-700 border-red-200' : 'bg-yellow-100 text-yellow-700 border-yellow-200';
+                    const statusText = b.status.toUpperCase();
+                    
+                    return `
+                    <div class="glass bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                        <div class="flex-1">
+                            <div class="flex items-center gap-3 mb-2">
+                                <span class="px-2.5 py-1 text-[10px] font-bold rounded-lg border ${statusColor}">${statusText}</span>
+                                <span class="text-xs text-gray-400 font-mono">ID: ${b.id.substring(0,8)}</span>
+                            </div>
+                            <h3 class="font-bold text-lg text-gray-800">${b.villas?.nama_villa || 'Villa Dihapus'}</h3>
+                            <p class="text-sm text-gray-500 flex items-center gap-1 mt-1">
+                                <i class="ph ph-calendar-blank"></i> ${b.tgl_checkin} <i class="ph ph-arrow-right text-xs mx-1"></i> ${b.tgl_checkout}
+                            </p>
+                            ${currentRole === 'admin' && !isBlocked ? `<p class="text-xs text-gray-400 mt-2"><i class="ph ph-user"></i> ${b.tamu?.nama_lengkap} (${b.tamu?.no_hp})</p>` : ''}
+                        </div>
+                        
+                        <div class="text-left md:text-right flex flex-row md:flex-col justify-between items-center md:items-end gap-2 border-t md:border-t-0 border-gray-100 pt-4 md:pt-0">
+                            ${!isBlocked ? `<div class="font-extrabold text-blue-600 text-lg">${formatRupiah(b.total_harga)}</div>` : '<div></div>'}
+                            
+                            <div class="flex gap-2">
+                                ${currentRole === 'admin' && b.status === 'pending' ? `
+                                    <button onclick="updateBookingStatus('${b.id}', 'confirmed')" class="px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded-xl text-xs font-bold transition shadow-sm shadow-green-500/30">Konfirmasi</button>
+                                ` : ''}
+                                ${currentRole === 'tamu' && b.status === 'confirmed' ? `
+                                    <button onclick="cetakResi('${b.id}')" class="px-4 py-2 bg-slate-800 hover:bg-slate-900 text-white rounded-xl text-xs font-bold transition shadow-sm flex items-center gap-1"><i class="ph ph-printer"></i> Cetak Resi</button>
+                                ` : ''}
+                                ${currentRole === 'admin' ? `
+                                    <button onclick="deleteBookingData('${b.id}')" class="px-3 py-2 bg-red-50 text-red-500 hover:bg-red-100 rounded-xl text-xs font-bold transition"><i class="ph ph-trash"></i></button>
+                                ` : ''}
+                            </div>
                         </div>
                     </div>
+                `}).join('')}
+            </div>
+        </div>
+    `;
+    return content;
+}
 
-                    <!-- PANEL PENGATURAN LOGO APLIKASI -->
-                    <div class="bg-white p-6 rounded-3xl border shadow-sm space-y-4">
-                        <h3 class="text-lg font-bold text-slate-900"><i class="fa-solid fa-image text-blue-600 mr-2"></i>Pengaturan Logo Aplikasi "Nyarivilla"</h3>
-                        <p class="text-xs text-slate-500">Unggah logo baru untuk mengubah ikon aplikasi di bilah navigasi secara langsung.</p>
-                        <div class="flex flex-col sm:flex-row items-center gap-4">
-                            <div class="w-20 h-20 bg-slate-100 rounded-2xl border flex items-center justify-center overflow-hidden">
-                                <img id="adminLogoPreview" src="${window.AppState.customLogoUrl || 'https://placehold.co/100x100/1d4ed8/ffffff?text=N'}" class="w-full h-full object-cover">
-                            </div>
-                            <div class="flex-1 w-full space-y-2">
-                                <input type="file" id="appLogoFileInput" accept="image/*" onchange="handleLogoUpload(event)" class="w-full text-sm file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-blue-50 file:text-blue-700">
-                                <p class="text-[11px] text-slate-400">Format yang didukung: PNG, JPG, atau WEBP (Maks. 2MB)</p>
-                            </div>
-                        </div>
-                    </div>
+async function updateBookingStatus(id, status) {
+    await API.updateBookingStatus(id, status);
+    renderApp();
+}
+async function deleteBookingData(id) {
+    if(confirm("Hapus data pemesanan/blokir ini?")) {
+        if(IS_PREVIEW) dummyBookings = dummyBookings.filter(x=>x.id!==id);
+        else await supabaseClient.from('bookings').delete().eq('id', id);
+        renderApp();
+    }
+}
 
-                    <div class="bg-white p-6 rounded-3xl border space-y-4">
-                        <h3 class="font-bold">Daftar Vila Terdaftar</h3>
-                        ${window.AppState.villas.map(v => `
-                            <div class="flex justify-between items-center p-3 bg-slate-50 rounded-xl">
-                                <div class="flex items-center space-x-3">
-                                    <img src="${v.image}" class="w-12 h-12 rounded-xl object-cover">
-                                    <div>
-                                        <h4 class="font-bold text-sm">${v.name}</h4>
-                                        <p class="text-xs text-slate-500">Rp ${Number(v.price).toLocaleString('id-ID')} / malam</p>
-                                    </div>
-                                </div>
-                            </div>
-                        `).join('')}
-                    </div>
+async function cetakResi(id) {
+    const bookings = await API.getBookings();
+    const b = bookings.find(x => x.id === id);
+    if(!b) return;
+
+    // Sembunyikan elemen utama, tampilkan resi print
+    const printAreaHtml = `
+        <div id="print-area" class="p-10 max-w-2xl mx-auto bg-white min-h-screen">
+            <div class="flex justify-between items-center border-b-2 border-gray-800 pb-6 mb-6">
+                <div>
+                    <h1 class="text-3xl font-black text-gray-900 uppercase tracking-widest">${appSettings.nama_app}</h1>
+                    <p class="text-gray-500 text-sm mt-1">E-Resi & Bukti Pemesanan Resmi</p>
                 </div>
-            `;
-        }
-
-        window.openAddVillaModal = () => document.getElementById('addVillaModal').classList.remove('hidden');
-        window.closeAddVillaModal = () => document.getElementById('addVillaModal').classList.add('hidden');
-
-        window.previewVillaImage = function(event) {
-            const file = event.target.files[0];
-            if (!file) return;
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                const base64Str = e.target.result;
-                document.getElementById('newVillaImageUrl').value = base64Str;
-                document.getElementById('villaImagePreview').src = base64Str;
-                document.getElementById('villaImagePreviewContainer').classList.remove('hidden');
-            };
-            reader.readAsDataURL(file);
-        }
-
-        window.handleLogoUpload = function(event) {
-            const file = event.target.files[0];
-            if (!file) return;
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                const base64Logo = e.target.result;
-                window.AppState.customLogoUrl = base64Logo;
-                document.getElementById('appLogoImg').src = base64Logo;
-                const adminPrev = document.getElementById('adminLogoPreview');
-                if(adminPrev) adminPrev.src = base64Logo;
-                showCustomModal("Berhasil", "Logo aplikasi berhasil diperbarui.", "success");
-            };
-            reader.readAsDataURL(file);
-        }
-
-        window.updateBookingStatus = function(bookingId, newStatus) {
-            const booking = window.AppState.bookings.find(b => b.id === bookingId);
-            if (booking) {
-                booking.status = newStatus;
-                renderCurrentView();
-                showCustomModal("Berhasil", "Status pesanan & ketersediaan tanggal diperbarui.", "success");
-            }
-        }
-
-        window.submitNewVilla = async function(e) {
-            e.preventDefault();
-            const name = document.getElementById('newVillaName').value;
-            const location = document.getElementById('newVillaLocation').value;
-            const price = document.getElementById('newVillaPrice').value;
-            const maxGuests = document.getElementById('newVillaMaxGuests').value;
-            const image = document.getElementById('newVillaImageUrl').value || 'https://placehold.co/600x400';
-            const description = document.getElementById('newVillaDesc').value;
-
-            const newV = { id: 'v-' + Date.now(), name, location, price, maxGuests, image, description };
-            window.AppState.villas.unshift(newV);
-            closeAddVillaModal();
-            renderCurrentView();
-            showCustomModal("Berhasil", "Vila baru ditambahkan.", "success");
-        }
-
-        window.openAuthModal = () => document.getElementById('authModal').classList.remove('hidden');
-        window.closeAuthModal = () => document.getElementById('authModal').classList.add('hidden');
-        window.setAuthTab = (type) => document.getElementById('authModeType').value = type;
-
-        window.submitAuthForm = function(e) {
-            e.preventDefault();
-            const type = document.getElementById('authModeType').value;
-            const name = document.getElementById('authName').value || (type === 'admin' ? 'Administrator' : 'Pengguna');
-            const identifier = document.getElementById('authIdentifier').value.trim();
-            const password = document.getElementById('authPassword').value.trim();
-
-            if (type === 'admin') {
-                // Validasi ketat kredensial admin
-                if (identifier !== 'admin@nyarivilla.com' || password !== 'Mania222@') {
-                    showCustomModal("Akses Ditolak", "Akun lain tidak diizinkan masuk ke Dashboard Admin.", "error");
-                    return;
-                }
-
-                window.AppState.user = { 
-                    name: 'Admin Nyarivilla', 
-                    email: 'admin@yarivilla.com',
-                    role: 'admin' 
-                };
-                closeAuthModal();
-                updateNavbarAuthUI();
-                switchView('admin');
-                showCustomModal("Admin Login", "Selamat datang di Panel Admin Nyarivilla.", "success");
-            } else {
-                window.AppState.user = { 
-                    name: name || 'Tamu Pengunjung', 
-                    email: identifier,
-                    role: 'user' 
-                };
-                closeAuthModal();
-                updateNavbarAuthUI();
-                switchView('explore');
-                showCustomModal("Login", "Berhasil masuk sebagai Tamu.", "success");
-            }
-        }
-
-        window.handleMobileAccountClick = () => {
-            if(!window.AppState.user) openAuthModal();
-            else if(window.AppState.user.role === 'admin') switchView('admin');
-            else showCustomModal("Akun", "Masuk sebagai: " + window.AppState.user.name, "success");
-        }
-
-        function updateNavbarAuthUI() {
-            const container = document.getElementById('desktopAuthNav');
-            if(window.AppState.user) {
-                const isAdmin = window.AppState.user.role === 'admin';
-                container.innerHTML = `
-                    <div class="flex items-center space-x-2">
-                        ${isAdmin ? `<button onclick="switchView('admin')" class="px-3 py-1.5 bg-emerald-100 text-emerald-800 font-bold text-xs rounded-xl"><i class="fa-solid fa-gauge mr-1"></i>Admin Dashboard</button>` : ''}
-                        <span class="text-xs font-bold text-slate-700">${window.AppState.user.name}</span>
-                        <button onclick="handleLogout()" class="text-xs text-rose-600 font-bold hover:underline ml-2">Keluar</button>
-                    </div>
-                `;
-            } else {
-                container.innerHTML = `<button onclick="openAuthModal()" class="px-5 py-2.5 bg-blue-600 text-white font-bold text-xs rounded-xl shadow-md hover:bg-blue-700 transition">Masuk</button>`;
-            }
-        }
-
-        window.setAuthTab = function(type) {
-            document.getElementById('authModeType').value = type;
-            const userBtn = document.getElementById('tabUserBtn');
-            const adminBtn = document.getElementById('tabAdminBtn');
-            const nameContainer = document.getElementById('userNameFieldContainer');
-            const identifierField = document.getElementById('authIdentifier');
-
-            if (type === 'admin') {
-                adminBtn.className = "flex-1 py-2 text-xs font-bold rounded-lg bg-white text-slate-800 shadow-xs transition";
-                userBtn.className = "flex-1 py-2 text-xs font-bold rounded-lg text-slate-500 transition";
-                if(nameContainer) nameContainer.style.display = 'none';
-                identifierField.placeholder = "cth: admin atau email";
-                identifierField.value = "admin";
-            } else {
-                userBtn.className = "flex-1 py-2 text-xs font-bold rounded-lg bg-white text-slate-800 shadow-xs transition";
-                adminBtn.className = "flex-1 py-2 text-xs font-bold rounded-lg text-slate-500 transition";
-                if(nameContainer) nameContainer.style.display = 'block';
-                identifierField.placeholder = "cth: budi123";
-                identifierField.value = "";
-            }
-        }
-
-        window.handleLogout = function() {
-            window.AppState.user = null;
-            updateNavbarAuthUI();
-            switchView('explore');
-        }
-
-        window.showCustomModal = function(title, msg, type) {
-            document.getElementById('customModalTitle').innerText = title;
-            document.getElementById('customModalMessage').innerText = msg;
-            document.getElementById('customModalAlert').classList.remove('hidden');
-        }
-        window.closeCustomModal = () => document.getElementById('customModalAlert').classList.add('hidden');
-    </script>
-
-    <!-- MODAL AUTHENTICATION (LOGIN / REGISTER) -->
-    <div id="authModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 flex items-center justify-center p-4 hidden">
-        <div class="bg-white rounded-3xl max-w-md w-full p-6 sm:p-8 shadow-2xl relative">
-            <button onclick="closeAuthModal()" class="absolute top-5 right-5 text-slate-400 hover:text-slate-700 w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center transition">
-                <i class="fa-solid fa-xmark"></i>
-            </button>
-            <div class="text-center mb-6">
-                <h3 class="text-2xl font-extrabold text-slate-900">Masuk ke Nyarivilla</h3>
-                <p class="text-xs text-slate-500 mt-1">Akses akun tamu atau login sebagai admin</p>
+                <img src="${appSettings.logo_url}" class="w-16 h-16 object-cover rounded-xl grayscale">
             </div>
             
-            <!-- Auth Role Tabs -->
-            <div class="flex bg-slate-100 p-1 rounded-xl mb-6">
-                <button type="button" id="tabUserBtn" onclick="setAuthTab('user')" class="flex-1 py-2 text-xs font-bold rounded-lg bg-white text-slate-800 shadow-xs transition">Tamu / Pengguna</button>
-                <button type="button" id="tabAdminBtn" onclick="setAuthTab('admin')" class="flex-1 py-2 text-xs font-bold rounded-lg text-slate-500 transition">Admin / Pengelola</button>
+            <div class="grid grid-cols-2 gap-8 mb-8">
+                <div>
+                    <p class="text-xs text-gray-400 font-bold uppercase tracking-wider mb-1">Data Tamu</p>
+                    <p class="font-bold text-gray-800">${b.tamu?.nama_lengkap || currentUser.nama_lengkap}</p>
+                    <p class="text-gray-600 text-sm">${b.tamu?.no_hp || currentUser.no_hp}</p>
+                </div>
+                <div class="text-right">
+                    <p class="text-xs text-gray-400 font-bold uppercase tracking-wider mb-1">ID Pesanan</p>
+                    <p class="font-mono font-bold text-gray-800">${b.id}</p>
+                    <p class="text-sm font-bold text-green-600 mt-1 uppercase border border-green-600 px-2 py-0.5 rounded inline-block">${b.status}</p>
+                </div>
             </div>
 
-            <form onsubmit="submitAuthForm(event)" class="space-y-4">
-                <input type="hidden" id="authModeType" value="user">
-                <div id="userNameFieldContainer">
-                    <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Nama Lengkap</label>
-                    <input type="text" id="authName" placeholder="cth: Andi Pratama" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+            <div class="bg-gray-50 border border-gray-200 rounded-2xl p-6 mb-8">
+                <p class="text-xs text-gray-400 font-bold uppercase tracking-wider mb-3">Detail Layanan</p>
+                <h3 class="text-xl font-bold text-gray-800 mb-4">${b.villas?.nama_villa}</h3>
+                
+                <div class="flex justify-between items-center py-3 border-b border-gray-200">
+                    <span class="text-gray-600">Check-in</span>
+                    <span class="font-bold">${b.tgl_checkin} (14:00)</span>
                 </div>
-                <div>
-                    <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Username / Email ID</label>
-                    <input type="text" id="authIdentifier" required placeholder="cth: budi123 atau admin" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <div class="flex justify-between items-center py-3 border-b border-gray-200">
+                    <span class="text-gray-600">Check-out</span>
+                    <span class="font-bold">${b.tgl_checkout} (12:00)</span>
                 </div>
-                <div>
-                    <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Kata Sandi (Password)</label>
-                    <input type="password" id="authPassword" required placeholder="••••••••" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <div class="flex justify-between items-center py-4 mt-2">
+                    <span class="text-gray-800 font-bold uppercase">Total Pembayaran</span>
+                    <span class="text-2xl font-black text-gray-900">${formatRupiah(b.total_harga)}</span>
                 </div>
-                <button type="submit" class="w-full py-4 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl shadow-lg transition">Masuk Sekarang</button>
-            </form>
+            </div>
+
+            <div class="text-center text-xs text-gray-400 mt-20">
+                <p>Terima kasih telah mempercayakan liburan Anda bersama kami.</p>
+                <p>CS/Admin: ${appSettings.no_wa_admin}</p>
+            </div>
+            
+            <div class="no-print mt-10 text-center">
+                <button onclick="window.print()" class="px-6 py-3 bg-blue-600 text-white rounded-xl font-bold shadow mr-2">Print / Save PDF</button>
+                <button onclick="document.getElementById('print-area').remove()" class="px-6 py-3 bg-gray-200 text-gray-800 rounded-xl font-bold">Tutup</button>
+            </div>
         </div>
-    </div>
+    `;
+    
+    document.body.insertAdjacentHTML('beforeend', printAreaHtml);
+}
+
+
+async function renderViewVillas() {
+    const villas = await API.getVillas();
+    let content = `
+        <div class="p-6 md:p-10 max-w-7xl mx-auto">
+            <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
+                <div>
+                    <h1 class="text-2xl md:text-3xl font-extrabold text-gray-900">Manajemen Villa</h1>
+                    <p class="text-gray-500 mt-1">Kelola data properti, harga, dan ketersediaan.</p>
+                </div>
+                <div class="flex gap-2 w-full md:w-auto">
+                    <button onclick="showFormVilla()" class="flex-1 md:flex-none px-5 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold shadow-lg shadow-blue-500/30 transition flex items-center justify-center gap-2"><i class="ph ph-plus-circle text-lg"></i> Tambah Villa</button>
+                    <button onclick="showFormBlokir()" class="flex-1 md:flex-none px-5 py-3 bg-red-100 hover:bg-red-200 text-red-700 rounded-xl font-bold transition flex items-center justify-center gap-2"><i class="ph ph-calendar-x text-lg"></i> Blokir Tanggal</button>
+                </div>
+            </div>
+
+            <div class="overflow-x-auto bg-white rounded-3xl shadow-sm border border-gray-100">
+                <table class="w-full text-left border-collapse">
+                    <thead>
+                        <tr class="bg-gray-50 border-b border-gray-100 text-gray-500 text-xs uppercase tracking-wider">
+                            <th class="p-4 font-semibold">Villa & Lokasi</th>
+                            <th class="p-4 font-semibold">Harga (WD / WE)</th>
+                            <th class="p-4 font-semibold text-right">Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody class="text-sm">
+                        ${villas.length === 0 ? `<tr><td colspan="3" class="p-8 text-center text-gray-400">Belum ada data.</td></tr>` : ''}
+                        ${villas.map(v => `
+                            <tr class="border-b border-gray-50 hover:bg-slate-50 transition">
+                                <td class="p-4">
+                                    <div class="flex items-center gap-3">
+                                        <img src="${v.gambar_url}" class="w-12 h-12 rounded-lg object-cover bg-gray-100">
+                                        <div>
+                                            <p class="font-bold text-gray-800">${v.nama_villa}</p>
+                                            <p class="text-xs text-gray-500 truncate w-32 md:w-auto">${v.lokasi}</p>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td class="p-4 font-mono text-xs text-gray-600">
+                                    WD: ${formatRupiah(v.harga_weekdays)}<br>
+                                    WE: ${formatRupiah(v.harga_weekend)}
+                                </td>
+                                <td class="p-4 text-right space-x-1">
+                                    <button onclick="showFormVilla('${v.id}')" class="p-2 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition"><i class="ph ph-pencil-simple"></i></button>
+                                    <button onclick="hapusVilla('${v.id}')" class="p-2 bg-red-50 text-red-500 rounded-lg hover:bg-red-100 transition"><i class="ph ph-trash"></i></button>
+                                </td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    `;
+    return content;
+}
+
+// Global state form villa
+let editVillaId = null;
+
+async function showFormVilla(id = null) {
+    editVillaId = id;
+    let v = { nama_villa:'', lokasi:'', kordinat_gps: '', deskripsi:'', harga_weekdays:0, harga_weekend:0 };
+    if(id) {
+        const villas = await API.getVillas();
+        v = villas.find(x => x.id === id) || v;
+    }
+
+    const modalHtml = `
+        <div id="form-villa-modal" class="modal-overlay !display-flex !items-end md:!items-center p-0 md:p-4 z-[150]" style="display:flex">
+            <div class="bg-white w-full md:w-[500px] max-h-[90vh] overflow-y-auto rounded-t-3xl md:rounded-3xl shadow-2xl animate-slide-up md:animate-scale-up p-6 md:p-8">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-xl font-bold text-gray-900">${id ? 'Edit Villa' : 'Tambah Villa Baru'}</h2>
+                    <button onclick="document.getElementById('form-villa-modal').remove()" class="text-gray-400 hover:text-gray-700"><i class="ph ph-x text-2xl"></i></button>
+                </div>
+                
+                <form id="form-villa" onsubmit="simpanVilla(event)" class="space-y-4">
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-600 mb-1">Nama Villa</label>
+                        <input type="text" id="fv-nama" value="${v.nama_villa}" required class="w-full p-3 rounded-xl border border-gray-200 outline-none focus:border-blue-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-600 mb-1">Lokasi Singkat</label>
+                        <input type="text" id="fv-lokasi" value="${v.lokasi}" required class="w-full p-3 rounded-xl border border-gray-200 outline-none focus:border-blue-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-600 mb-1">Koordinat GPS (Opsional, Format: Lat,Lng)</label>
+                        <input type="text" id="fv-gps" value="${v.kordinat_gps || ''}" class="w-full p-3 rounded-xl border border-gray-200 outline-none focus:border-blue-500" placeholder="Contoh: -6.702,106.994">
+                    </div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-600 mb-1">Harga Weekdays</label>
+                            <input type="number" id="fv-hwd" value="${v.harga_weekdays}" required class="w-full p-3 rounded-xl border border-gray-200 outline-none focus:border-blue-500">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-600 mb-1">Harga Weekend</label>
+                            <input type="number" id="fv-hwe" value="${v.harga_weekend}" required class="w-full p-3 rounded-xl border border-gray-200 outline-none focus:border-blue-500">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-600 mb-1">Deskripsi</label>
+                        <textarea id="fv-desk" rows="3" class="w-full p-3 rounded-xl border border-gray-200 outline-none focus:border-blue-500">${v.deskripsi}</textarea>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-600 mb-1">Upload Gambar Utama</label>
+                        <input type="file" id="fv-file" accept="image/*" class="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100">
+                    </div>
+                    <button type="submit" class="w-full mt-4 py-3.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold shadow-lg shadow-blue-500/30">Simpan Data</button>
+                </form>
+            </div>
+        </div>
+    `;
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+}
+
+async function simpanVilla(e) {
+    e.preventDefault();
+    const btn = e.target.querySelector('button[type="submit"]');
+    btn.innerText = 'Menyimpan...'; btn.disabled = true;
+
+    const payload = {
+        id: editVillaId,
+        nama_villa: document.getElementById('fv-nama').value,
+        lokasi: document.getElementById('fv-lokasi').value,
+        kordinat_gps: document.getElementById('fv-gps').value,
+        harga_weekdays: document.getElementById('fv-hwd').value,
+        harga_weekend: document.getElementById('fv-hwe').value,
+        deskripsi: document.getElementById('fv-desk').value,
+    };
+    const file = document.getElementById('fv-file').files[0];
+
+    const res = await API.saveVilla(payload, file);
+    if(res) {
+        document.getElementById('form-villa-modal').remove();
+        renderApp();
+    }
+}
+
+async function hapusVilla(id) {
+    if(confirm("Yakin ingin menghapus villa ini secara permanen?")) {
+        await API.deleteVilla(id);
+        renderApp();
+    }
+}
+
+async function showFormBlokir() {
+    const villas = await API.getVillas();
+    const modalHtml = `
+        <div id="form-blokir-modal" class="modal-overlay z-[150]" style="display:flex">
+            <div class="bg-white w-full max-w-md p-6 rounded-3xl shadow-2xl">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-xl font-bold text-gray-900">Blokir Tanggal Ketersediaan</h2>
+                    <button onclick="document.getElementById('form-blokir-modal').remove()" class="text-gray-400"><i class="ph ph-x text-2xl"></i></button>
+                </div>
+                <form onsubmit="simpanBlokir(event)" class="space-y-4">
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-600 mb-1">Pilih Villa</label>
+                        <select id="fb-villa" required class="w-full p-3 rounded-xl border border-gray-200 outline-none bg-white">
+                            ${villas.map(v => `<option value="${v.id}">${v.nama_villa}</option>`).join('')}
+                        </select>
+                    </div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-600 mb-1">Mulai Tanggal</label>
+                            <input type="date" id="fb-start" required class="w-full p-3 rounded-xl border border-gray-200 outline-none">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-600 mb-1">Sampai Tanggal</label>
+                            <input type="date" id="fb-end" required class="w-full p-3 rounded-xl border border-gray-200 outline-none">
+                        </div>
+                    </div>
+                    <p class="text-xs text-gray-400 leading-tight mb-2">Tanggal yang diblokir tidak akan bisa dipesan oleh tamu. Berguna saat renovasi atau pemakaian pribadi.</p>
+                    <button type="submit" class="w-full py-3 bg-red-600 text-white rounded-xl font-bold shadow-lg shadow-red-500/30">Simpan Pemblokiran</button>
+                </form>
+            </div>
+        </div>
+    `;
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+}
+
+async function simpanBlokir(e) {
+    e.preventDefault();
+    const payload = {
+        villa_id: document.getElementById('fb-villa').value,
+        tgl_checkin: document.getElementById('fb-start').value,
+        tgl_checkout: document.getElementById('fb-end').value,
+        status: 'blocked',
+        total_harga: 0,
+        tamu_id: null // Admin bypass
+    };
+    if(payload.tgl_checkin >= payload.tgl_checkout) {
+        showModal('Error', 'Tanggal akhir harus lebih besar dari tanggal mulai.'); return;
+    }
+    await API.createBooking(payload);
+    document.getElementById('form-blokir-modal').remove();
+    navigate('bookings'); // Arahkan ke daftar pesanan untuk melihat hasil blokir
+}
+
+async function renderViewSettings() {
+    let content = `
+        <div class="p-6 md:p-10 max-w-3xl mx-auto">
+            <h1 class="text-2xl md:text-3xl font-extrabold text-gray-900 mb-2">Pengaturan Aplikasi</h1>
+            <p class="text-gray-500 mb-8">Ubah informasi dasar dan tampilan aplikasi.</p>
+            
+            <div class="glass bg-white p-6 md:p-8 rounded-3xl shadow-sm border border-gray-100">
+                <form onsubmit="simpanSettings(event)" class="space-y-6">
+                    <div class="flex flex-col md:flex-row gap-6 items-start">
+                        <div class="w-24 h-24 rounded-2xl bg-gray-100 border-2 border-dashed border-gray-300 flex-shrink-0 overflow-hidden relative group">
+                            <img src="${appSettings.logo_url}" class="w-full h-full object-cover">
+                            <div class="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition">
+                                <i class="ph ph-camera text-white text-2xl"></i>
+                            </div>
+                            <input type="file" id="set-logo" accept="image/*" class="absolute inset-0 opacity-0 cursor-pointer">
+                        </div>
+                        <div class="flex-1 w-full space-y-4">
+                            <div>
+                                <label class="block text-xs font-semibold text-gray-600 mb-1">Nama Aplikasi</label>
+                                <input type="text" id="set-nama" value="${appSettings.nama_app}" required class="w-full p-3 rounded-xl border border-gray-200 outline-none focus:border-blue-500">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-gray-600 mb-1">Nomor WhatsApp CS/Admin</label>
+                                <input type="tel" id="set-wa" value="${appSettings.no_wa_admin}" required class="w-full p-3 rounded-xl border border-gray-200 outline-none focus:border-blue-500">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-600 mb-1">Informasi Singkat / Slogan</label>
+                        <textarea id="set-info" rows="2" class="w-full p-3 rounded-xl border border-gray-200 outline-none focus:border-blue-500">${appSettings.info_admin}</textarea>
+                    </div>
+
+                    <button type="submit" class="w-full md:w-auto px-8 py-3 bg-slate-800 hover:bg-slate-900 text-white rounded-xl font-bold transition shadow-lg">Simpan Perubahan</button>
+                </form>
+            </div>
+        </div>
+    `;
+    return content;
+}
+
+async function simpanSettings(e) {
+    e.preventDefault();
+    const btn = e.target.querySelector('button[type="submit"]');
+    btn.innerText = 'Menyimpan...'; btn.disabled = true;
+
+    const payload = {
+        nama_app: document.getElementById('set-nama').value,
+        no_wa_admin: document.getElementById('set-wa').value,
+        info_admin: document.getElementById('set-info').value
+    };
+    const file = document.getElementById('set-logo').files[0];
+
+    const res = await API.updateSettings(payload, file);
+    if(res) {
+        showModal('Sukses', 'Pengaturan berhasil diperbarui.');
+        renderApp(); // re-render to update sidebar logo
+    } else {
+        btn.innerText = 'Simpan Perubahan'; btn.disabled = false;
+    }
+}
+
+
+/**
+ * -----------------------------------------------------------------------------
+ * MAIN RENDER CONTROLLER
+ * -----------------------------------------------------------------------------
+ */
+async function renderApp() {
+    const root = document.getElementById('root');
+    
+    // Jika belum login, tampilkan layar login
+    if (currentRole === 'guest') {
+        root.innerHTML = renderLogin();
+        return;
+    }
+
+    // Ambil konten view aktif
+    let mainContentHtml = '';
+    if (currentView === 'home') mainContentHtml = await renderViewHome();
+    else if (currentView === 'villas' && currentRole === 'admin') mainContentHtml = await renderViewVillas();
+    else if (currentView === 'bookings') mainContentHtml = await renderViewBookings();
+    else if (currentView === 'settings' && currentRole === 'admin') mainContentHtml = await renderViewSettings();
+    else mainContentHtml = `<div class="p-10 text-center text-gray-500">View tidak ditemukan atau akses ditolak.</div>`;
+
+    root.innerHTML = `
+        ${renderPreviewBanner()}
+        <div id="app-container" class="${IS_PREVIEW ? 'pt-8' : ''}">
+            ${renderSidebar()}
+            <div id="main-content">
+                ${mainContentHtml}
+            </div>
+            ${renderBottomNav()}
+        </div>
+    `;
+}
+
+// Inisialisasi awal
+document.addEventListener('DOMContentLoaded', () => {
+    // Inject Custom Animations Style dynamically
+    const style = document.createElement('style');
+    style.innerHTML = `
+        @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+        @keyframes scaleUp { from { transform: scale(0.95); opacity:0; } to { transform: scale(1); opacity:1; } }
+        .animate-slide-up { animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+        .animate-scale-up { animation: scaleUp 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+    `;
+    document.head.appendChild(style);
+    
+    renderApp();
+});
+</script>
 </body>
 </html>
