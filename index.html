@@ -40,11 +40,6 @@
         </div>
     </header>
 
-    <!-- Banner Mode Preview -->
-    <div id="preview-banner" class="bg-amber-100 text-amber-800 text-[10px] text-center py-1.5 font-bold uppercase tracking-widest shadow-sm">
-        Mode Preview Aktif (Data Dummy Lokal)
-    </div>
-
     <!-- Main Content Area -->
     <main class="p-4 max-w-3xl mx-auto">
         
@@ -153,12 +148,6 @@
                     </div>
                     <button onclick="prosesLogin()" class="w-full bg-blue-900 hover:bg-blue-800 text-white font-bold py-3.5 rounded-xl shadow-lg transition active:scale-95 mt-2">LOGIN SEKARANG</button>
                 </div>
-                
-                <div class="mt-6 pt-4 border-t border-gray-200/60 bg-blue-50 p-4 rounded-xl text-xs text-blue-800 text-center border border-blue-100">
-                    <p class="font-bold mb-1">Akses Mode Preview:</p>
-                    <p>Admin: <b>admin</b> / <b>edudigital</b></p>
-                    <p>Member: <b>peserta</b> / <b>edudigital</b></p>
-                </div>
             </div>
         </div>
 
@@ -212,35 +201,18 @@
     // ==========================================
     // KONFIGURASI APLIKASI UTAMA (GAS VERSION)
     // ==========================================
-    const IS_PREVIEW = false; // PASTIKAN INI FALSE
-    // PERBAIKAN: URL GAS kini diapit tanda kutip agar tidak error
     const GAS_URL = "https://script.google.com/macros/s/AKfycbwuMerpM4KX5-TBXmuYrXS306VxRAv7PXFL2FJPwUcK0IFWug-XGBiYcOBGK49Snd0v/exec"; 
 
-    // STATE LOKAL & DUMMY DATA
+    // STATE LOKAL PADA APLIKASI (MODE LIVE)
     let currentUser = null; 
     let currentVillas = [];
     let selectedVillaHarga = {};
-
-    // Data Dummy
-    const dummyVillas = [
-        { id: "v1", nama_villa: "Villa Puncak Asri", lokasi: "Cisarua, Bogor", kordinat_gps: "-6.699,106.942", harga_senin_kamis: 500000, harga_jumat: 700000, harga_sabtu: 900000, harga_minggu: 800000, harga_promo: 0, deskripsi: "Nyaman dan asri dengan view gunung yang indah.", gambar_url: "https://placehold.co/600x400/1e3a8a/ffffff?text=Puncak+Asri" },
-        { id: "v2", nama_villa: "Villa Kaca Modern", lokasi: "Lembang, Bandung", kordinat_gps: "-6.814,107.618", harga_senin_kamis: 800000, harga_jumat: 1000000, harga_sabtu: 1500000, harga_minggu: 1200000, harga_promo: 750000, deskripsi: "Desain arsitektur kaca yang menyatu dengan alam.", gambar_url: "https://placehold.co/600x400/0ea5e9/ffffff?text=Kaca+Modern" }
-    ];
-    let dummyBookings = [
-        { id: 'b1', nama: 'Budi Santoso', wa: '08123456', in: '2026-12-25', out: '2026-12-27', total: 1800000, villa_id: 'v1' }
-    ];
-    let dummyChats = [
-        { pengirim: 'admin', pesan: 'Halo! Ada yang bisa kami bantu mengenai penyewaan villa hari ini?', waktu: new Date().toLocaleTimeString('id-ID', {hour: '2-digit', minute:'2-digit'}) }
-    ];
+    let currentChats = [];
 
     // FUNGSI INISIALISASI SAAT HALAMAN DIMUAT
     window.onload = () => {
-        if(!IS_PREVIEW) {
-            document.getElementById('preview-banner').style.display = 'none';
-            // Alarm pengingat jika URL GAS belum diganti
-            if(GAS_URL === "URL_DEPLOY_GAS_ANDA_DISINI" || GAS_URL === "") {
-                alert("SISTEM LIVE AKTIF: Namun Anda belum memasukkan Link GAS_URL! Data tidak akan bisa dimuat.");
-            }
+        if(GAS_URL === "URL_DEPLOY_GAS_ANDA_DISINI" || GAS_URL === "") {
+            alert("SISTEM LIVE AKTIF: Namun Anda belum memasukkan Link GAS_URL! Data tidak akan bisa dimuat.");
         }
         muatKatalog();
     }
@@ -298,21 +270,18 @@
         let container = document.getElementById('katalog-container');
         let villas = [];
         
-        if(IS_PREVIEW) {
-            villas = dummyVillas;
-        } else {
-            if (!GAS_URL.startsWith('http')) {
-                container.innerHTML = '<p class="col-span-full text-center text-red-500 font-bold mt-10">Peringatan: Link GAS_URL belum dikonfigurasi dengan benar!</p>';
-                return;
-            }
-            try {
-                let res = await fetch(`${GAS_URL}?action=getVillas`);
-                villas = await res.json();
-            } catch(e) { 
-                container.innerHTML = '<p class="col-span-full text-center text-red-500 mt-10">Data tidak ditemukan atau belum ditambahkan oleh Admin.</p>'; 
-                return; 
-            }
+        if (!GAS_URL.startsWith('http')) {
+            container.innerHTML = '<p class="col-span-full text-center text-red-500 font-bold mt-10">Peringatan: Link GAS_URL belum dikonfigurasi dengan benar!</p>';
+            return;
         }
+        try {
+            let res = await fetch(`${GAS_URL}?action=getVillas`);
+            villas = await res.json();
+        } catch(e) { 
+            container.innerHTML = '<p class="col-span-full text-center text-red-500 mt-10">Data tidak ditemukan atau belum ditambahkan oleh Admin.</p>'; 
+            return; 
+        }
+        
         currentVillas = villas;
         tampilkanKatalog(villas);
     }
@@ -465,29 +434,23 @@
             alert("Harap lengkapi semua formulir dan pastikan tanggal menginap benar!"); return; 
         }
         
-        if(IS_PREVIEW) {
-            dummyBookings.push(data); // Simpan sementara untuk admin
-            alert(`PREVIEW: Hore! Booking berhasil dibuat atas nama ${data.nama}.\nTotal Tagihan: Rp ${parseInt(data.total).toLocaleString('id-ID')}`);
-            switchView('view-home');
-        } else {
-            if (!GAS_URL.startsWith('http')) {
-                alert("Sistem Gagal: Link GAS_URL belum diatur di dalam kode."); 
-                return; 
-            }
-            
-            let btn = document.querySelector('#view-booking button[onclick="prosesBooking()"]');
-            let textAsli = btn.innerText;
-            btn.innerText = "Memproses Pesanan..."; btn.disabled = true;
-            
-            try {
-                let res = await fetch(GAS_URL, { method: 'POST', body: JSON.stringify(data) });
-                let status = await res.text();
-                alert(status);
-                switchView('view-home');
-            } catch(e) { alert("Terjadi kesalahan sistem saat menghubungi server."); }
-            
-            btn.innerText = textAsli; btn.disabled = false;
+        if (!GAS_URL.startsWith('http')) {
+            alert("Sistem Gagal: Link GAS_URL belum diatur di dalam kode."); 
+            return; 
         }
+        
+        let btn = document.querySelector('#view-booking button[onclick="prosesBooking()"]');
+        let textAsli = btn.innerText;
+        btn.innerText = "Memproses Pesanan..."; btn.disabled = true;
+        
+        try {
+            let res = await fetch(GAS_URL, { method: 'POST', body: JSON.stringify(data) });
+            let status = await res.text();
+            alert(status);
+            switchView('view-home');
+        } catch(e) { alert("Terjadi kesalahan sistem saat menghubungi server."); }
+        
+        btn.innerText = textAsli; btn.disabled = false;
     }
 
     // ==========================================
@@ -497,7 +460,7 @@
         const box = document.getElementById('chat-box');
         box.innerHTML = '';
         
-        dummyChats.forEach(c => {
+        currentChats.forEach(c => {
             const isAdmin = c.pengirim === 'admin';
             box.innerHTML += `
                 <div class="flex flex-col ${isAdmin ? 'items-start' : 'items-end'} w-full">
@@ -519,7 +482,10 @@
         document.getElementById('chat-msg').disabled = false;
         document.getElementById('btn-send-chat').disabled = false;
         
-        if(dummyChats.length === 1) muatChat(); // Muat pesan default admin pertama kali
+        if(currentChats.length === 0) {
+            currentChats.push({ pengirim: 'admin', pesan: 'Halo! Ada yang bisa kami bantu?', waktu: new Date().toLocaleTimeString('id-ID', {hour: '2-digit', minute:'2-digit'}) });
+            muatChat(); 
+        }
     }
 
     function kirimChat() {
@@ -528,25 +494,13 @@
         if(!msg) return;
         
         // Masukkan pesan user
-        dummyChats.push({ 
+        currentChats.push({ 
             pengirim: currentUser ? currentUser.role : 'tamu', 
             pesan: msg,
             waktu: new Date().toLocaleTimeString('id-ID', {hour: '2-digit', minute:'2-digit'})
         });
         inputMsg.value = '';
         muatChat();
-        
-        // Auto-reply Admin (Simulasi Mode Preview)
-        if(IS_PREVIEW && (currentUser?.role !== 'admin')) {
-            setTimeout(() => {
-                dummyChats.push({ 
-                    pengirim: 'admin', 
-                    pesan: 'Terima kasih atas pesannya. Tim Admin kami akan segera merespons Anda sesaat lagi.',
-                    waktu: new Date().toLocaleTimeString('id-ID', {hour: '2-digit', minute:'2-digit'})
-                });
-                muatChat();
-            }, 1000);
-        }
     }
 
     // ==========================================
@@ -556,46 +510,35 @@
         let u = document.getElementById('log-user').value;
         let p = document.getElementById('log-pass').value;
         
-        if(IS_PREVIEW) {
-            if(u === 'admin' && p === 'edudigital') {
-                currentUser = {role: 'admin', nama: 'Admin Utama', wa: '08000'};
-                document.getElementById('user-status').innerHTML = '<i class="ph-fill ph-shield-check text-green-600"></i> Admin';
-                switchView('view-admin');
-                showAdminForm('dashboard');
-            } else if(u === 'peserta' && p === 'edudigital') {
-                currentUser = {role: 'tamu', nama: 'Member Peserta', wa: u};
-                document.getElementById('user-status').innerHTML = '<i class="ph-fill ph-check-circle text-blue-600"></i> Member';
-                switchView('view-home');
-                // Auto trigger chat unlock if they go to chat
-                document.getElementById('chat-identity-box').classList.add('hidden');
-                document.getElementById('chat-msg').disabled = false;
-                document.getElementById('btn-send-chat').disabled = false;
-            } else { alert("Login Gagal. Coba cek Data Shortcut Mode Preview di bawah tombol login."); }
-        } else {
-            if (!GAS_URL.startsWith('http')) {
-                alert("Sistem Gagal: Link GAS_URL belum diatur. Silakan ganti placeholder dengan link deploy GAS Anda.");
-                return;
-            }
-            
-            try {
-                let res = await fetch(`${GAS_URL}?action=login&u=${u}&p=${p}`);
-                let data = await res.json();
-                if(data.status === 'success') {
-                    currentUser = data.user;
-                    document.getElementById('user-status').innerText = data.user.role.toUpperCase();
-                    if(data.user.role === 'admin') {
-                        switchView('view-admin'); showAdminForm('dashboard');
-                    } else {
-                        switchView('view-home');
-                        document.getElementById('chat-identity-box').classList.add('hidden');
-                        document.getElementById('chat-msg').disabled = false;
-                        document.getElementById('btn-send-chat').disabled = false;
-                    }
-                } else { alert("Username / Password salah."); }
-            } catch(e) {
-                alert("Terjadi kesalahan koneksi. Pastikan URL GAS benar.");
-            }
+        if (!GAS_URL.startsWith('http')) {
+            alert("Sistem Gagal: Link GAS_URL belum diatur. Silakan ganti placeholder dengan link deploy GAS Anda.");
+            return;
         }
+        
+        let btn = document.querySelector('#view-login button[onclick="prosesLogin()"]');
+        let textAsli = btn.innerText;
+        btn.innerText = "Memeriksa Kredensial..."; btn.disabled = true;
+        
+        try {
+            let res = await fetch(`${GAS_URL}?action=login&u=${u}&p=${p}`);
+            let data = await res.json();
+            if(data.status === 'success') {
+                currentUser = data.user;
+                document.getElementById('user-status').innerText = data.user.role.toUpperCase();
+                if(data.user.role === 'admin') {
+                    switchView('view-admin'); showAdminForm('dashboard');
+                } else {
+                    switchView('view-home');
+                    document.getElementById('chat-identity-box').classList.add('hidden');
+                    document.getElementById('chat-msg').disabled = false;
+                    document.getElementById('btn-send-chat').disabled = false;
+                }
+            } else { alert("Username / Password salah."); }
+        } catch(e) {
+            alert("Terjadi kesalahan koneksi. Pastikan URL GAS benar.");
+        }
+        
+        btn.innerText = textAsli; btn.disabled = false;
     }
 
     function logout() {
@@ -670,32 +613,8 @@
         let ws = document.getElementById('admin-workspace');
         let html = '<h3 class="font-bold text-blue-900 mb-4 border-b pb-2 flex items-center gap-2"><i class="ph-bold ph-calendar-check text-lg"></i> Daftar Reservasi Tamu</h3>';
         
-        if(dummyBookings.length === 0) {
-            ws.innerHTML = html + '<p class="text-sm text-gray-500 text-center py-6">Belum ada pesanan yang masuk.</p>';
-            return;
-        }
-        
-        dummyBookings.forEach((b, idx) => {
-            let v_name = currentVillas.find(v => v.id === b.villa_id)?.nama_villa || "Villa ID: " + b.villa_id;
-            html += `
-                <div class="p-4 bg-white rounded-xl mb-3 border border-gray-100 shadow-sm flex flex-col gap-2 relative">
-                    <div class="absolute top-4 right-4 bg-yellow-100 text-yellow-800 text-[10px] font-bold px-2 py-1 rounded">PENDING</div>
-                    <p class="font-bold text-sm text-gray-900"><i class="ph-fill ph-user-circle text-gray-400"></i> ${b.nama}</p>
-                    <p class="text-xs font-mono text-gray-500"><i class="ph-fill ph-whatsapp-logo text-green-500"></i> ${b.wa}</p>
-                    
-                    <div class="bg-gray-50 p-2 rounded-lg mt-1 border border-gray-100 text-xs text-gray-700">
-                        <p class="font-bold text-blue-800 mb-1">${v_name}</p>
-                        <p>In: <b>${b.in}</b> &nbsp;&rarr;&nbsp; Out: <b>${b.out}</b></p>
-                    </div>
-                    
-                    <div class="flex justify-between items-center mt-1">
-                        <p class="text-sm font-black text-green-700">Rp ${parseInt(b.total).toLocaleString('id-ID')}</p>
-                        <button onclick="alert('Pesanan dikonfirmasi (Preview)')" class="bg-green-500 hover:bg-green-600 text-white text-xs px-3 py-1.5 rounded-lg font-bold">Konfirmasi</button>
-                    </div>
-                </div>
-            `;
-        });
-        ws.innerHTML = html;
+        // Membutuhkan penambahan fungsi di backend Google Apps Script untuk menarik data pemesanan
+        ws.innerHTML = html + '<p class="text-sm text-gray-500 text-center py-6">Data Pemesanan akan dimuat dari Database Sheets Anda.</p>';
     }
 
     async function simpanVilla() {
@@ -721,35 +640,20 @@
                 mimeType: file.type
             };
             
-            if(IS_PREVIEW) {
-                // Simulasi update data katalog di memori browser
-                payload.id = 'v_baru_' + Date.now();
-                payload.gambar_url = reader.result; // Tampilkan preview gambar
-                payload.harga_senin_kamis = payload.h1; payload.harga_jumat = payload.h2; 
-                payload.harga_sabtu = payload.h3; payload.harga_minggu = payload.h4; payload.harga_promo = payload.h5;
-                payload.lokasi = "Lokasi Baru";
-                
-                dummyVillas.unshift(payload); // Taruh di urutan pertama
-                
-                alert("PREVIEW: Data Villa beserta Gambar Base64 berhasil direkam dan Katalog langsung diperbarui!");
-                muatKatalog(); // Refresh katalog beranda
-                showAdminForm('dashboard'); // Tutup form admin
-            } else {
-                if (!GAS_URL.startsWith('http')) {
-                    alert("Sistem Gagal: Link GAS_URL belum diatur. Tidak dapat menyimpan data.");
-                    return;
-                }
-                
-                let btn = document.querySelector('#admin-workspace button');
-                btn.innerText = "Mengunggah Gambar ke Drive & Sheets..."; btn.disabled = true;
-                
-                try {
-                    let res = await fetch(GAS_URL, { method: 'POST', body: JSON.stringify(payload) });
-                    alert(await res.text());
-                    muatKatalog();
-                    showAdminForm('dashboard');
-                } catch(e) { alert("Gagal mengunggah data."); btn.innerText = "Coba Lagi"; btn.disabled = false; }
+            if (!GAS_URL.startsWith('http')) {
+                alert("Sistem Gagal: Link GAS_URL belum diatur. Tidak dapat menyimpan data.");
+                return;
             }
+            
+            let btn = document.querySelector('#admin-workspace button');
+            btn.innerText = "Mengunggah Gambar ke Drive & Sheets..."; btn.disabled = true;
+            
+            try {
+                let res = await fetch(GAS_URL, { method: 'POST', body: JSON.stringify(payload) });
+                alert(await res.text());
+                muatKatalog();
+                showAdminForm('dashboard');
+            } catch(e) { alert("Gagal mengunggah data."); btn.innerText = "Coba Lagi"; btn.disabled = false; }
         };
         reader.readAsDataURL(file);
     }
