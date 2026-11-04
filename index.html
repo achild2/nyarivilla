@@ -18,13 +18,13 @@
         }
         .hidden-view { display: none !important; }
         .bottom-nav { padding-bottom: env(safe-area-inset-bottom); }
-        /* Scroll halus untuk galeri foto villa */
         .hide-scroll::-webkit-scrollbar { display: none; }
         .hide-scroll { -ms-overflow-style: none; scrollbar-width: none; }
     </style>
 </head>
 <body>
 <div id="app-container">
+    <!-- HEADER -->
     <header class="glass-panel sticky top-0 z-50 px-4 py-3 flex justify-between items-center text-blue-900 shadow-sm">
         <h1 class="font-bold text-xl flex items-center gap-2">
             <i id="ui-app-icon" class="fa-solid fa-house-chimney"></i>
@@ -131,12 +131,12 @@
 </div>
 
 <script>
-    const GAS_URL = "https://script.google.com/macros/s/AKfycby0IryLQqu16wJtWIhVYZkAENH0a4QUCF6pUdLlYiVokzJsmPPdA7vtPA2m_Fhhfzwy/exec";
+    const GAS_URL = "https://script.google.com/macros/s/AKfycbwzfUptzX7t9gyNlzApBfxr2A0d_-XodhXR1C_-nVJOIPXUbuVuRaZhAr6-uxL0d-a1/exec";
 
     let currentUser = null;
     let currentVillas = [];
     let appSettings = {};
-    let editVillaId = null; // Menyimpan ID saat mengedit villa
+    let editVillaId = null; 
 
     window.onload = () => muatPengaturanDanKatalog();
 
@@ -180,7 +180,6 @@
 
         villas.forEach(v => {
             let images = (v.gambar_url || '').split(',');
-            // HTML untuk Slider/Galeri Gambar
             let imgHtml = `<div class="flex overflow-x-auto snap-x hide-scroll gap-1 bg-gray-100">`;
             if(images[0]) {
                 images.forEach(img => {
@@ -211,7 +210,7 @@
         });
     }
 
-    // --- FITUR RESERVASI ADMIN ---
+    // --- FITUR RESERVASI ADMIN DENGAN KONFIRMASI ---
     async function loadAdminBookings() {
         let ws = document.getElementById('admin-workspace');
         ws.innerHTML = '<p class="text-sm text-center">Memuat daftar reservasi...</p>';
@@ -223,25 +222,47 @@
             data.forEach(b => {
                 let v = currentVillas.find(x => x.id == b.villa_id);
                 let namaV = v ? v.nama_villa : 'Villa Dihapus';
+                
+                // Cek status untuk memunculkan tombol konfirmasi
+                let isPending = b.status === 'pending';
+                let statusBadge = isPending ? '<span class="text-xs bg-amber-100 text-amber-800 px-2 rounded font-bold">Menunggu</span>' : '<span class="text-xs bg-green-100 text-green-800 px-2 rounded font-bold"><i class="fa-solid fa-check"></i> Confirmed</span>';
+                let actionBtn = isPending ? `<button onclick="konfirmasiBookingAdmin('${b.id}')" class="mt-2 w-full bg-green-600 text-white text-xs font-bold px-2 py-2 rounded-lg shadow hover:bg-green-700">Konfirmasi Pembayaran & Pesanan</button>` : '';
+
                 html += `
                     <div class="border border-blue-200 bg-white p-3 rounded-xl shadow-sm text-sm">
-                        <div class="flex justify-between border-b pb-1 mb-2">
+                        <div class="flex justify-between items-center border-b pb-1 mb-2">
                             <b class="text-blue-900">${b.nama}</b>
-                            <span class="text-xs bg-amber-100 text-amber-800 px-2 rounded">${b.status}</span>
+                            ${statusBadge}
                         </div>
                         <div class="text-xs text-gray-600 space-y-1">
                             <p><i class="fa-solid fa-house"></i> ${namaV}</p>
                             <p><i class="fa-brands fa-whatsapp"></i> ${b.wa}</p>
                             <p><i class="fa-regular fa-calendar"></i> In: <b>${b.in.split('T')[0]}</b> | Out: <b>${b.out.split('T')[0]}</b></p>
-                            <p class="text-blue-800 font-bold mt-1">Total: Rp ${Number(b.total).toLocaleString('id-ID')}</p>
+                            <p class="text-blue-800 font-bold mt-1 text-sm">Total: Rp ${Number(b.total).toLocaleString('id-ID')}</p>
                         </div>
+                        ${actionBtn}
                     </div>`;
             });
             ws.innerHTML = html + '</div>';
         } catch (e) { ws.innerHTML = '<p class="text-sm text-red-500">Gagal memuat reservasi.</p>'; }
     }
 
-    // --- FITUR KELOLA VILLA (DAFTAR & EDIT) ---
+    async function konfirmasiBookingAdmin(idBooking) {
+        if(!confirm("Anda yakin ingin mengonfirmasi pesanan ini? Status akan diubah menjadi Confirmed.")) return;
+        
+        let ws = document.getElementById('admin-workspace');
+        ws.innerHTML = '<p class="text-sm text-center">Sedang memproses...</p>';
+        try {
+            let res = await fetch(GAS_URL, { method: 'POST', body: JSON.stringify({ action: 'confirmBooking', id: idBooking }) });
+            alert(await res.text());
+            loadAdminBookings(); // Muat ulang daftar
+        } catch(e) {
+            alert("Gagal mengonfirmasi pesanan.");
+            loadAdminBookings();
+        }
+    }
+
+    // --- FITUR KELOLA VILLA ---
     function showAdminListVilla() {
         let ws = document.getElementById('admin-workspace');
         let html = `
@@ -286,7 +307,7 @@
             </div>
 
             <label class="text-xs text-gray-500 font-bold">Upload Foto (Bisa pilih lebih dari 1 file)</label>
-            ${id ? '<p class="text-[10px] text-amber-600 mb-1">Catatan: Mengupload foto baru akan menimpa/mengganti foto sebelumnya.</p>' : ''}
+            ${id ? '<p class="text-[10px] text-amber-600 mb-1">Catatan: Mengupload foto baru akan menimpa foto lama.</p>' : ''}
             <input type="file" id="v-gambar" accept="image/*" multiple class="w-full mb-4 text-xs p-2 border rounded bg-white">
             
             <button onclick="simpanVillaAdmin()" id="btn-save-villa" class="w-full bg-blue-600 text-white py-3 rounded-xl text-sm font-bold shadow">
@@ -300,7 +321,7 @@
         ws.innerHTML = `
             <h3 class="font-bold mb-3 text-blue-900">Pengaturan Aplikasi</h3>
             <input type="text" id="set-nama" value="${appSettings.nama_app || ''}" placeholder="Nama Aplikasi" class="w-full mb-2 p-2 border rounded text-sm">
-            <input type="text" id="set-wa" value="${appSettings.no_wa_admin || ''}" placeholder="No WhatsApp Admin" class="w-full mb-2 p-2 border rounded text-sm">
+            <input type="text" id="set-wa" value="${appSettings.no_wa_admin || ''}" placeholder="No WhatsApp Admin (Format 628...)" class="w-full mb-2 p-2 border rounded text-sm">
             <textarea id="set-info" placeholder="Info Admin" class="w-full mb-2 p-2 border rounded text-sm">${appSettings.info_admin || ''}</textarea>
             <label class="text-xs text-gray-500">Upload Logo Baru</label>
             <input type="file" id="set-logo" accept="image/*" class="w-full mb-3 text-xs p-1 border rounded bg-white">
@@ -308,7 +329,7 @@
         `;
     }
 
-    // --- FUNGSI PEMBACA FILE (MULTIPLE) ---
+    // --- FUNGSI PEMBACA FILE ---
     function readFileAsBase64(file) {
         return new Promise((resolve, reject) => {
             let reader = new FileReader();
@@ -376,7 +397,7 @@
         btn.innerText = "Selesai"; btn.disabled = false;
     }
 
-    // LOGIKA UMUM (LOGIN & BOOKING)
+    // LOGIKA LOGIN & BOOKING
     async function prosesLogin() {
         let u = document.getElementById('log-user').value, p = document.getElementById('log-pass').value;
         if(!u || !p) return;
@@ -422,6 +443,7 @@
         document.getElementById('book-total').setAttribute('data-harga', total);
     }
     
+    // PEMESANAN DAN OTOMATIS REDIRECT KE WA ADMIN
     async function prosesBooking() {
         let data = {
             action: 'bookVilla', villa_id: document.getElementById('book-villa-id').value,
@@ -429,10 +451,33 @@
             in: document.getElementById('book-in').value, out: document.getElementById('book-out').value,
             total: document.getElementById('book-total').getAttribute('data-harga') || 0
         };
-        if(!data.nama || !data.wa || !data.in || !data.out) { alert("Lengkapi data!"); return; }
-        event.target.innerText = "Mengirim...";
-        await fetch(GAS_URL, { method: 'POST', body: JSON.stringify(data) });
-        alert("Pemesanan Berhasil!"); switchView('view-home'); event.target.innerText = "Konfirmasi Pesanan";
+        if(!data.nama || !data.wa || !data.in || !data.out) { alert("Lengkapi data formulir!"); return; }
+        
+        event.target.innerText = "Memproses Pesanan...";
+        
+        try {
+            await fetch(GAS_URL, { method: 'POST', body: JSON.stringify(data) });
+            alert("Pemesanan Berhasil Disimpan di Sistem!"); 
+            
+            // Generate pesan notifikasi otomatis untuk WA
+            let waAdmin = appSettings.no_wa_admin || "628000000000";
+            let teksWa = `Halo Admin Nyarivilla, saya *${data.nama}* baru saja memesan *${window.selectedVilla.nama_villa}*.\n\n`
+                       + `Rincian Pesanan:\n`
+                       + `- Check-In: ${data.in}\n`
+                       + `- Check-Out: ${data.out}\n`
+                       + `- Total: Rp ${Number(data.total).toLocaleString('id-ID')}\n\n`
+                       + `Mohon info untuk proses pembayarannya.`;
+            
+            let urlWa = `https://wa.me/${waAdmin}?text=${encodeURIComponent(teksWa)}`;
+            
+            // Redirect tamu ke WhatsApp Admin
+            window.open(urlWa, '_blank');
+            
+            switchView('view-home');
+        } catch(e) {
+            alert("Gagal menghubungi server.");
+        }
+        event.target.innerText = "Konfirmasi Pesanan";
     }
 </script>
 </body>
