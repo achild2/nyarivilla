@@ -37,7 +37,7 @@
     <!-- Main Content Area -->
     <main class="p-4 mb-20">
         <!-- VIEWS: HOME -->
-        <div id="view-home">
+        <div id="view-home" class="view-section">
             <div class="flex justify-between items-center mb-4">
                 <h2 class="font-bold text-lg text-blue-900">Katalog Villa</h2>
                 <button onclick="cariLokasiGPS()" class="bg-blue-600 text-white text-xs px-3 py-2 rounded-full shadow hover:bg-blue-700 transition">
@@ -50,7 +50,7 @@
         </div>
 
         <!-- VIEWS: BOOKING FORM -->
-        <div id="view-booking" class="hidden-view max-w-md mx-auto">
+        <div id="view-booking" class="view-section hidden-view max-w-md mx-auto">
             <button onclick="switchView('view-home')" class="mb-4 text-blue-600"><i class="fa-solid fa-arrow-left"></i> Kembali</button>
             <div class="glass-panel rounded-2xl p-5">
                 <h2 class="font-bold text-lg text-blue-900 mb-2">Form Pemesanan</h2>
@@ -90,7 +90,7 @@
         </div>
 
         <!-- VIEWS: LIVE CHAT -->
-        <div id="view-chat" class="hidden-view max-w-md mx-auto flex flex-col" style="height: 70vh;">
+        <div id="view-chat" class="view-section hidden-view max-w-md mx-auto flex flex-col" style="height: 70vh;">
             <div class="glass-panel rounded-t-2xl p-3 border-b flex items-center justify-between">
                 <h2 class="font-bold text-blue-900">Live Chat</h2>
                 <div id="chat-identity-box" class="text-xs flex gap-1">
@@ -108,7 +108,7 @@
         </div>
 
         <!-- VIEWS: LOGIN / MEMBER -->
-        <div id="view-login" class="hidden-view max-w-sm mx-auto mt-10">
+        <div id="view-login" class="view-section hidden-view max-w-sm mx-auto mt-10">
             <div class="glass-panel rounded-2xl p-6 text-center">
                 <h2 class="font-bold text-xl text-blue-900 mb-4">Area Member / Admin</h2>
                 <input type="text" id="log-user" class="w-full p-3 border rounded-xl mb-3 text-sm" placeholder="No. HP / Username">
@@ -118,7 +118,7 @@
         </div>
 
         <!-- VIEWS: ADMIN DASHBOARD -->
-        <div id="view-admin" class="hidden-view">
+        <div id="view-admin" class="view-section hidden-view">
             <h2 class="font-bold text-xl text-blue-900 mb-4">Dashboard Admin</h2>
             <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
                 <button onclick="showAdminForm('villa')" class="glass-panel p-4 rounded-2xl text-blue-900 text-center hover:bg-blue-50">
@@ -157,7 +157,8 @@
 
 <!-- SCRIPT LOGIKA APLIKASI -->
 <script>
-    const GAS_URL = "https://script.google.com/macros/s/AKfycby-RBxmErHgtzYr1se5tq_W7NBORvVkB_9bSsy9oKflq8H_E2DqIvRgPi6ujx4aF48D/exec";
+    // URL GOOGLE APPS SCRIPT ANDA
+    const GAS_URL = "https://script.google.com/macros/s/AKfycbzdHJPkEwKoPCB9mR2w050ag3n7lkhy5zExQjnTXemHU0ysj31EISM14cCpoKC3F-8K/exec";
 
     let currentUser = null;
     let currentVillas = [];
@@ -167,10 +168,14 @@
         muatPengaturanDanKatalog();
     }
 
+    // FUNGSI NAVIGASI YANG TELAH DIPERBAIKI (TIDAK ADA LAGI TUMPANG TINDIH)
     function switchView(viewId) {
-        document.querySelectorAll('.hidden-view, #view-home').forEach(el => el.classList.add('hidden-view'));
+        // 1. Sembunyikan SEMUA elemen yang memiliki kelas 'view-section'
+        document.querySelectorAll('.view-section').forEach(el => {
+            el.classList.add('hidden-view');
+        });
+        // 2. Tampilkan HANYA elemen dengan ID yang dituju
         document.getElementById(viewId).classList.remove('hidden-view');
-        if(viewId === 'view-home') document.getElementById('view-home').classList.remove('hidden-view');
     }
 
     function cekLoginStatus() {
