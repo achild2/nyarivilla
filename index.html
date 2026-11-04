@@ -131,7 +131,7 @@
 </div>
 
 <script>
-    const GAS_URL = "https://script.google.com/macros/s/AKfycbwzfUptzX7t9gyNlzApBfxr2A0d_-XodhXR1C_-nVJOIPXUbuVuRaZhAr6-uxL0d-a1/exec";
+    const GAS_URL = "https://script.google.com/macros/s/AKfycbxyJ1QwbhQyLRnlekYNVfS58qtqu3x7I_xhW4EYs7idEwGmBYrPi8065YWeheDuM3Qu/exec";
 
     let currentUser = null;
     let currentVillas = [];
@@ -161,7 +161,8 @@
                 appSettings = data.settings;
                 document.getElementById('ui-app-name').innerText = appSettings.nama_app || "Nyarivilla";
                 if(appSettings.logo_url && appSettings.logo_url.startsWith('http')) {
-                    document.getElementById('ui-app-logo').src = appSettings.logo_url;
+                    // Trik '&t=' agar browser selalu memuat gambar terbaru (anti-cache)
+                    document.getElementById('ui-app-logo').src = appSettings.logo_url + "&t=" + new Date().getTime();
                     document.getElementById('ui-app-logo').classList.remove('hidden');
                     document.getElementById('ui-app-icon').classList.add('hidden');
                 }
