@@ -212,8 +212,9 @@
     // ==========================================
     // KONFIGURASI APLIKASI UTAMA (GAS VERSION)
     // ==========================================
-    const IS_PREVIEW = false; 
-    const GAS_URL = "https://script.google.com/macros/s/AKfycbwuMerpM4KX5-TBXmuYrXS306VxRAv7PXFL2FJPwUcK0IFWug-XGBiYcOBGK49Snd0v/exec";
+    const IS_PREVIEW = false; // PASTIKAN INI FALSE
+    // PERBAIKAN: URL GAS kini diapit tanda kutip agar tidak error
+    const GAS_URL = "https://script.google.com/macros/s/AKfycbwuMerpM4KX5-TBXmuYrXS306VxRAv7PXFL2FJPwUcK0IFWug-XGBiYcOBGK49Snd0v/exec"; 
 
     // STATE LOKAL & DUMMY DATA
     let currentUser = null; 
@@ -234,7 +235,13 @@
 
     // FUNGSI INISIALISASI SAAT HALAMAN DIMUAT
     window.onload = () => {
-        if(!IS_PREVIEW) document.getElementById('preview-banner').style.display = 'none';
+        if(!IS_PREVIEW) {
+            document.getElementById('preview-banner').style.display = 'none';
+            // Alarm pengingat jika URL GAS belum diganti
+            if(GAS_URL === "URL_DEPLOY_GAS_ANDA_DISINI" || GAS_URL === "") {
+                alert("SISTEM LIVE AKTIF: Namun Anda belum memasukkan Link GAS_URL! Data tidak akan bisa dimuat.");
+            }
+        }
         muatKatalog();
     }
 
@@ -294,11 +301,15 @@
         if(IS_PREVIEW) {
             villas = dummyVillas;
         } else {
+            if (!GAS_URL.startsWith('http')) {
+                container.innerHTML = '<p class="col-span-full text-center text-red-500 font-bold mt-10">Peringatan: Link GAS_URL belum dikonfigurasi dengan benar!</p>';
+                return;
+            }
             try {
                 let res = await fetch(`${GAS_URL}?action=getVillas`);
                 villas = await res.json();
             } catch(e) { 
-                container.innerHTML = '<p class="col-span-full text-center text-red-500">Gagal memuat data dari database.</p>'; 
+                container.innerHTML = '<p class="col-span-full text-center text-red-500 mt-10">Data tidak ditemukan atau belum ditambahkan oleh Admin.</p>'; 
                 return; 
             }
         }
@@ -459,6 +470,11 @@
             alert(`PREVIEW: Hore! Booking berhasil dibuat atas nama ${data.nama}.\nTotal Tagihan: Rp ${parseInt(data.total).toLocaleString('id-ID')}`);
             switchView('view-home');
         } else {
+            if (!GAS_URL.startsWith('http')) {
+                alert("Sistem Gagal: Link GAS_URL belum diatur di dalam kode."); 
+                return; 
+            }
+            
             let btn = document.querySelector('#view-booking button[onclick="prosesBooking()"]');
             let textAsli = btn.innerText;
             btn.innerText = "Memproses Pesanan..."; btn.disabled = true;
@@ -556,20 +572,29 @@
                 document.getElementById('btn-send-chat').disabled = false;
             } else { alert("Login Gagal. Coba cek Data Shortcut Mode Preview di bawah tombol login."); }
         } else {
-            let res = await fetch(`${GAS_URL}?action=login&u=${u}&p=${p}`);
-            let data = await res.json();
-            if(data.status === 'success') {
-                currentUser = data.user;
-                document.getElementById('user-status').innerText = data.user.role.toUpperCase();
-                if(data.user.role === 'admin') {
-                    switchView('view-admin'); showAdminForm('dashboard');
-                } else {
-                    switchView('view-home');
-                    document.getElementById('chat-identity-box').classList.add('hidden');
-                    document.getElementById('chat-msg').disabled = false;
-                    document.getElementById('btn-send-chat').disabled = false;
-                }
-            } else { alert("Username / Password salah."); }
+            if (!GAS_URL.startsWith('http')) {
+                alert("Sistem Gagal: Link GAS_URL belum diatur. Silakan ganti placeholder dengan link deploy GAS Anda.");
+                return;
+            }
+            
+            try {
+                let res = await fetch(`${GAS_URL}?action=login&u=${u}&p=${p}`);
+                let data = await res.json();
+                if(data.status === 'success') {
+                    currentUser = data.user;
+                    document.getElementById('user-status').innerText = data.user.role.toUpperCase();
+                    if(data.user.role === 'admin') {
+                        switchView('view-admin'); showAdminForm('dashboard');
+                    } else {
+                        switchView('view-home');
+                        document.getElementById('chat-identity-box').classList.add('hidden');
+                        document.getElementById('chat-msg').disabled = false;
+                        document.getElementById('btn-send-chat').disabled = false;
+                    }
+                } else { alert("Username / Password salah."); }
+            } catch(e) {
+                alert("Terjadi kesalahan koneksi. Pastikan URL GAS benar.");
+            }
         }
     }
 
@@ -710,6 +735,11 @@
                 muatKatalog(); // Refresh katalog beranda
                 showAdminForm('dashboard'); // Tutup form admin
             } else {
+                if (!GAS_URL.startsWith('http')) {
+                    alert("Sistem Gagal: Link GAS_URL belum diatur. Tidak dapat menyimpan data.");
+                    return;
+                }
+                
                 let btn = document.querySelector('#admin-workspace button');
                 btn.innerText = "Mengunggah Gambar ke Drive & Sheets..."; btn.disabled = true;
                 
