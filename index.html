@@ -28,7 +28,7 @@
     <header class="glass-panel sticky top-0 z-50 px-4 py-3 flex justify-between items-center text-blue-900 shadow-sm">
         <h1 class="font-bold text-xl flex items-center gap-2">
             <i id="ui-app-icon" class="fa-solid fa-house-chimney"></i>
-            <!-- Ditambahkan referrerpolicy="no-referrer" -->
+            <!-- Logo yang telah diperbaiki -->
             <img id="ui-app-logo" src="" referrerpolicy="no-referrer" class="h-8 w-8 object-cover rounded hidden shadow-sm border border-blue-200">
             <span id="ui-app-name">Nyarivilla</span>
         </h1>
@@ -47,29 +47,54 @@
             <div id="katalog-container" class="grid grid-cols-1 md:grid-cols-3 gap-4"></div>
         </div>
 
+        <!-- FITUR BARU: HALAMAN DETAIL VILLA -->
+        <div id="view-detail" class="view-section hidden-view max-w-md mx-auto pb-6">
+            <button onclick="switchView('view-home')" class="mb-4 text-blue-600"><i class="fa-solid fa-arrow-left"></i> Kembali ke Katalog</button>
+            <div class="glass-panel rounded-2xl overflow-hidden shadow-lg border border-blue-100 bg-white">
+                <div id="detail-images" class="flex overflow-x-auto snap-x hide-scroll bg-gray-200">
+                    <!-- Foto detail dimuat dari JS -->
+                </div>
+                <div class="p-5">
+                    <div class="flex justify-between items-start mb-1">
+                        <h2 id="detail-nama" class="font-bold text-2xl text-blue-900">Nama Villa</h2>
+                    </div>
+                    <p id="detail-lokasi" class="text-sm text-gray-500 mb-5"><i class="fa-solid fa-location-dot text-red-500"></i> Lokasi Villa</p>
+                    
+                    <h4 class="font-bold text-blue-800 text-sm mb-2 border-b pb-1">Deskripsi & Fasilitas</h4>
+                    <p id="detail-deskripsi" class="text-sm text-gray-700 mb-5 whitespace-pre-wrap leading-relaxed"></p>
+                    
+                    <h4 class="font-bold text-blue-800 text-sm mb-2 border-b pb-1">Daftar Harga (Per Malam)</h4>
+                    <ul id="detail-harga" class="text-sm text-gray-700 mb-6 space-y-2">
+                        <!-- Harga dimuat dari JS -->
+                    </ul>
+                    
+                    <button id="btn-lanjut-pesan" class="w-full bg-blue-600 text-white font-bold py-3 rounded-xl shadow-lg hover:bg-blue-700 transition">Mulai Pemesanan</button>
+                </div>
+            </div>
+        </div>
+
         <!-- FORM BOOKING -->
         <div id="view-booking" class="view-section hidden-view max-w-md mx-auto">
-            <button onclick="switchView('view-home')" class="mb-4 text-blue-600"><i class="fa-solid fa-arrow-left"></i> Kembali</button>
+            <button onclick="kembaliKeDetail()" class="mb-4 text-blue-600"><i class="fa-solid fa-arrow-left"></i> Kembali</button>
             <div class="glass-panel rounded-2xl p-5">
                 <h2 class="font-bold text-lg text-blue-900 mb-2">Form Pemesanan</h2>
-                <h3 id="book-villa-name" class="font-semibold text-blue-700">Nama Villa</h3>
-                <p id="book-villa-desc" class="text-xs text-gray-500 mb-4 italic line-clamp-2"></p>
+                <h3 id="book-villa-name" class="font-bold text-blue-700 mb-4 border-b pb-2 border-blue-100">Nama Villa</h3>
                 <div class="space-y-3">
                     <input type="hidden" id="book-villa-id">
-                    <div><label class="text-xs text-gray-500">Nama Lengkap</label><input type="text" id="book-nama" class="w-full p-2 border rounded-lg" placeholder="Nama Pemesan"></div>
-                    <div><label class="text-xs text-gray-500">No. WhatsApp</label><input type="number" id="book-wa" class="w-full p-2 border rounded-lg" placeholder="08xxxxxxxx"></div>
+                    <div><label class="text-xs text-gray-500">Nama Lengkap</label><input type="text" id="book-nama" class="w-full p-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Nama Pemesan"></div>
+                    <div><label class="text-xs text-gray-500">No. WhatsApp</label><input type="number" id="book-wa" class="w-full p-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="08xxxxxxxx"></div>
                     <div class="grid grid-cols-2 gap-2">
-                        <div><label class="text-xs text-gray-500">Check-In</label><input type="date" id="book-in" onchange="kalkulasiHarga()" class="w-full p-2 border rounded-lg"></div>
-                        <div><label class="text-xs text-gray-500">Check-Out</label><input type="date" id="book-out" onchange="kalkulasiHarga()" class="w-full p-2 border rounded-lg"></div>
+                        <div><label class="text-xs text-gray-500">Check-In</label><input type="date" id="book-in" onchange="kalkulasiHarga()" class="w-full p-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"></div>
+                        <div><label class="text-xs text-gray-500">Check-Out</label><input type="date" id="book-out" onchange="kalkulasiHarga()" class="w-full p-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"></div>
                     </div>
-                    <div class="bg-blue-50 p-3 rounded-lg mt-4">
-                        <p class="text-xs text-gray-500">Rincian Tarif:</p>
-                        <ul id="book-rincian" class="text-xs text-blue-800 list-disc pl-4 mb-2">Pilih tanggal...</ul>
-                        <div class="flex justify-between font-bold text-lg text-blue-900 border-t border-blue-200 pt-2">
+                    <div class="bg-blue-50 p-3 rounded-lg mt-4 border border-blue-100">
+                        <p class="text-xs text-gray-500 font-semibold mb-1">Rincian Tarif:</p>
+                        <ul id="book-rincian" class="text-xs text-blue-800 list-disc pl-4 mb-2">Pilih tanggal check-in & out...</ul>
+                        <div class="flex justify-between font-bold text-lg text-blue-900 border-t border-blue-200 pt-2 mt-2">
                             <span>Total</span><span id="book-total">Rp 0</span>
                         </div>
                     </div>
-                    <button onclick="prosesBooking()" class="w-full bg-blue-600 text-white font-bold py-3 rounded-xl shadow-lg mt-4">Konfirmasi Pesanan</button>
+                    <button onclick="prosesBooking()" class="w-full bg-blue-600 text-white font-bold py-3 rounded-xl shadow-lg mt-4 hover:bg-blue-700 transition">Konfirmasi Pesanan</button>
                 </div>
             </div>
         </div>
@@ -79,13 +104,13 @@
             <div class="glass-panel rounded-t-2xl p-3 border-b flex items-center justify-between">
                 <h2 class="font-bold text-blue-900">Live Chat</h2>
                 <div class="text-xs flex gap-1">
-                    <input type="number" id="chat-wa-input" placeholder="No WA Anda" class="p-1 border rounded w-28">
+                    <input type="number" id="chat-wa-input" placeholder="No WA Anda" class="p-1 border rounded w-28 focus:outline-none focus:ring-1 focus:ring-blue-500">
                     <button onclick="mulaiChat()" class="bg-blue-600 text-white px-2 py-1 rounded">Mulai</button>
                 </div>
             </div>
-            <div id="chat-box" class="flex-1 bg-white p-3 overflow-y-auto space-y-2"><div class="text-center text-xs text-gray-400">Masukkan No WhatsApp.</div></div>
+            <div id="chat-box" class="flex-1 bg-white p-3 overflow-y-auto space-y-2"><div class="text-center text-xs text-gray-400">Masukkan No WhatsApp Anda untuk memulai obrolan.</div></div>
             <div class="glass-panel rounded-b-2xl p-2 flex gap-2">
-                <input type="text" id="chat-msg" class="flex-1 p-2 border rounded-xl text-sm" placeholder="Ketik pesan..." disabled>
+                <input type="text" id="chat-msg" class="flex-1 p-2 border rounded-xl text-sm focus:outline-none focus:ring-1 focus:ring-blue-500" placeholder="Ketik pesan..." disabled>
                 <button onclick="kirimChat()" class="bg-blue-600 text-white px-4 rounded-xl" disabled id="btn-send-chat"><i class="fa-solid fa-paper-plane"></i></button>
             </div>
         </div>
@@ -94,8 +119,8 @@
         <div id="view-login" class="view-section hidden-view max-w-sm mx-auto mt-10">
             <div class="glass-panel rounded-2xl p-6 text-center">
                 <h2 class="font-bold text-xl text-blue-900 mb-4">Area Admin</h2>
-                <input type="text" id="log-user" class="w-full p-3 border rounded-xl mb-3 text-sm" placeholder="Username">
-                <input type="password" id="log-pass" class="w-full p-3 border rounded-xl mb-4 text-sm" placeholder="Password">
+                <input type="text" id="log-user" class="w-full p-3 border rounded-xl mb-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Username">
+                <input type="password" id="log-pass" class="w-full p-3 border rounded-xl mb-4 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Password">
                 <button onclick="prosesLogin()" class="w-full bg-blue-900 text-white font-bold py-3 rounded-xl shadow-lg mb-4">MASUK</button>
             </div>
         </div>
@@ -104,20 +129,20 @@
         <div id="view-admin" class="view-section hidden-view">
             <h2 class="font-bold text-xl text-blue-900 mb-4">Dashboard Admin</h2>
             <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
-                <button onclick="showAdminListVilla()" class="glass-panel p-4 rounded-2xl text-blue-900 text-center hover:bg-blue-50">
+                <button onclick="showAdminListVilla()" class="glass-panel p-4 rounded-2xl text-blue-900 text-center hover:bg-blue-50 transition">
                     <i class="fa-solid fa-house-medical text-2xl mb-2"></i><br>Kelola Villa
                 </button>
-                <button onclick="loadAdminBookings()" class="glass-panel p-4 rounded-2xl text-blue-900 text-center hover:bg-blue-50">
+                <button onclick="loadAdminBookings()" class="glass-panel p-4 rounded-2xl text-blue-900 text-center hover:bg-blue-50 transition">
                     <i class="fa-solid fa-calendar-check text-2xl mb-2"></i><br>Reservasi
                 </button>
-                <button onclick="showAdminSettings()" class="glass-panel p-4 rounded-2xl text-blue-900 text-center hover:bg-blue-50">
+                <button onclick="showAdminSettings()" class="glass-panel p-4 rounded-2xl text-blue-900 text-center hover:bg-blue-50 transition">
                     <i class="fa-solid fa-gear text-2xl mb-2"></i><br>Pengaturan
                 </button>
-                <button onclick="logout()" class="glass-panel p-4 rounded-2xl text-red-600 text-center hover:bg-red-50">
+                <button onclick="logout()" class="glass-panel p-4 rounded-2xl text-red-600 text-center hover:bg-red-50 transition">
                     <i class="fa-solid fa-right-from-bracket text-2xl mb-2"></i><br>Keluar
                 </button>
             </div>
-            <div id="admin-workspace" class="glass-panel rounded-2xl p-5 border-blue-200">
+            <div id="admin-workspace" class="glass-panel rounded-2xl p-5 border-blue-200 bg-white bg-opacity-70">
                 <p class="text-center text-gray-400 text-sm">Pilih menu di atas.</p>
             </div>
         </div>
@@ -125,9 +150,9 @@
 
     <!-- Bottom Navigation -->
     <nav class="glass-panel fixed bottom-0 w-full flex justify-around text-xs text-blue-900 py-3 bottom-nav border-t z-50">
-        <button onclick="switchView('view-home')" class="flex flex-col items-center gap-1 w-1/4"><i class="fa-solid fa-house text-lg"></i> Beranda</button>
-        <button onclick="switchView('view-chat')" class="flex flex-col items-center gap-1 w-1/4"><i class="fa-solid fa-comments text-lg"></i> Live Chat</button>
-        <button onclick="cekLoginStatus()" class="flex flex-col items-center gap-1 w-1/4"><i class="fa-solid fa-user text-lg"></i> Akun / Admin</button>
+        <button onclick="switchView('view-home')" class="flex flex-col items-center gap-1 w-1/4 hover:text-blue-600"><i class="fa-solid fa-house text-lg"></i> Beranda</button>
+        <button onclick="switchView('view-chat')" class="flex flex-col items-center gap-1 w-1/4 hover:text-blue-600"><i class="fa-solid fa-comments text-lg"></i> Live Chat</button>
+        <button onclick="cekLoginStatus()" class="flex flex-col items-center gap-1 w-1/4 hover:text-blue-600"><i class="fa-solid fa-user text-lg"></i> Akun / Admin</button>
     </nav>
 </div>
 
@@ -144,6 +169,8 @@
     function switchView(viewId) {
         document.querySelectorAll('.view-section').forEach(el => el.classList.add('hidden-view'));
         document.getElementById(viewId).classList.remove('hidden-view');
+        // Scroll ke paling atas saat ganti menu
+        window.scrollTo({ top: 0, behavior: 'smooth' });
     }
 
     function cekLoginStatus() {
@@ -162,8 +189,8 @@
                 appSettings = data.settings;
                 document.getElementById('ui-app-name').innerText = appSettings.nama_app || "Nyarivilla";
                 if(appSettings.logo_url && appSettings.logo_url.startsWith('http')) {
-                    // Update: Menampilkan logo dengan bypass cache
-                    document.getElementById('ui-app-logo').src = appSettings.logo_url + "&t=" + new Date().getTime();
+                    // LINK LOGO TELAH DIPERBAIKI (Murni URL asli)
+                    document.getElementById('ui-app-logo').src = appSettings.logo_url;
                     document.getElementById('ui-app-logo').classList.remove('hidden');
                     document.getElementById('ui-app-icon').classList.add('hidden');
                 }
@@ -171,21 +198,20 @@
             currentVillas = data.villas || [];
             tampilkanKatalog(currentVillas);
         } catch(e) {
-            container.innerHTML = '<p class="text-sm text-center text-red-500 py-10">Gagal memuat data.</p>';
+            container.innerHTML = '<p class="text-sm text-center text-red-500 py-10">Gagal memuat data. Periksa jaringan internet Anda.</p>';
         }
     }
 
     function tampilkanKatalog(villas, coords = null) {
         let container = document.getElementById('katalog-container');
         container.innerHTML = '';
-        if(villas.length === 0) return container.innerHTML = '<p class="text-sm text-gray-500 text-center">Belum ada villa.</p>';
+        if(villas.length === 0) return container.innerHTML = '<p class="text-sm text-gray-500 text-center">Belum ada villa terdaftar.</p>';
 
         villas.forEach(v => {
             let images = (v.gambar_url || '').split(',');
             let imgHtml = `<div class="flex overflow-x-auto snap-x hide-scroll gap-1 bg-gray-100">`;
             if(images[0]) {
                 images.forEach(img => {
-                    // Update: Menambahkan referrerpolicy pada gambar villa
                     if(img.trim() !== "") imgHtml += `<img src="${img.trim()}" referrerpolicy="no-referrer" class="w-full h-48 object-cover shrink-0 snap-center">`;
                 });
             } else {
@@ -196,237 +222,80 @@
             let hWD = v.harga_senin_kamis ? Number(v.harga_senin_kamis).toLocaleString('id-ID') : '0';
             let hWE = v.harga_sabtu ? Number(v.harga_sabtu).toLocaleString('id-ID') : '0';
             let promo = v.harga_promo ? Number(v.harga_promo) : 0;
-            let hargaTampil = promo > 0 ? `<strike class="text-xs text-gray-400">Rp ${hWE}</strike> <span class="text-red-600 font-bold">Rp ${promo.toLocaleString('id-ID')}</span>` : `Mulai Rp ${hWD}`;
+            let hargaTampil = promo > 0 ? `<strike class="text-xs text-gray-400">Rp ${hWE}</strike> <span class="text-red-600 font-bold text-lg block">Rp ${promo.toLocaleString('id-ID')}</span>` : `<span class="font-bold text-blue-900">Mulai Rp ${hWD}</span>`;
 
+            // KARTU VILLA DIPERBARUI: Ditambahkan 2 Tombol
             container.innerHTML += `
-                <div class="glass-panel rounded-2xl overflow-hidden relative shadow-sm">
+                <div class="glass-panel rounded-2xl overflow-hidden relative shadow-sm border border-blue-50 bg-white hover:shadow-md transition">
                     ${imgHtml}
                     <div class="p-4">
-                        <h3 class="font-bold text-blue-900 text-lg leading-tight mb-1">${v.nama_villa}</h3>
-                        <p class="text-xs text-gray-500 mb-2"><i class="fa-solid fa-location-dot"></i> ${v.lokasi}</p>
-                        <p class="text-xs text-gray-600 mb-3 italic line-clamp-2">${v.deskripsi || ''}</p>
-                        <p class="text-sm mb-3">${hargaTampil}</p>
-                        <button onclick="bukaFormBooking('${v.id}')" class="w-full bg-blue-100 text-blue-700 font-bold py-2 rounded-xl text-sm hover:bg-blue-600 hover:text-white transition">Pesan Sekarang</button>
+                        <h3 class="font-bold text-blue-900 text-lg leading-tight mb-1 truncate">${v.nama_villa}</h3>
+                        <p class="text-xs text-gray-500 mb-3"><i class="fa-solid fa-location-dot"></i> ${v.lokasi}</p>
+                        <p class="text-sm mb-4">${hargaTampil}</p>
+                        <div class="flex gap-2">
+                            <button onclick="bukaDetailVilla('${v.id}')" class="flex-1 bg-white border-2 border-blue-600 text-blue-600 font-bold py-2 rounded-xl text-sm hover:bg-blue-50 transition"><i class="fa-solid fa-circle-info"></i> Detail</button>
+                            <button onclick="bukaFormBooking('${v.id}')" class="flex-1 bg-blue-600 border-2 border-blue-600 text-white font-bold py-2 rounded-xl text-sm hover:bg-blue-700 transition">Pesan</button>
+                        </div>
                     </div>
                 </div>
             `;
         });
     }
 
-    async function loadAdminBookings() {
-        let ws = document.getElementById('admin-workspace');
-        ws.innerHTML = '<p class="text-sm text-center">Memuat daftar reservasi...</p>';
-        try {
-            let res = await fetch(`${GAS_URL}?action=getBookings`);
-            let data = await res.json();
-            let html = '<h3 class="font-bold mb-3 text-blue-900">Daftar Reservasi Terbaru</h3><div class="space-y-3">';
-            if(data.length === 0) html += '<p class="text-xs text-gray-500">Belum ada pesanan.</p>';
-            data.forEach(b => {
-                let v = currentVillas.find(x => x.id == b.villa_id);
-                let namaV = v ? v.nama_villa : 'Villa Dihapus';
-                
-                let isPending = b.status === 'pending';
-                let statusBadge = isPending ? '<span class="text-xs bg-amber-100 text-amber-800 px-2 rounded font-bold">Menunggu</span>' : '<span class="text-xs bg-green-100 text-green-800 px-2 rounded font-bold"><i class="fa-solid fa-check"></i> Confirmed</span>';
-                let actionBtn = isPending ? `<button onclick="konfirmasiBookingAdmin('${b.id}')" class="mt-2 w-full bg-green-600 text-white text-xs font-bold px-2 py-2 rounded-lg shadow hover:bg-green-700">Konfirmasi Pembayaran & Pesanan</button>` : '';
+    // FITUR BARU: BUKA HALAMAN DETAIL VILLA
+    function bukaDetailVilla(id) {
+        let v = currentVillas.find(x => x.id == id);
+        if(!v) return;
+        window.selectedVilla = v;
 
-                html += `
-                    <div class="border border-blue-200 bg-white p-3 rounded-xl shadow-sm text-sm">
-                        <div class="flex justify-between items-center border-b pb-1 mb-2">
-                            <b class="text-blue-900">${b.nama}</b>
-                            ${statusBadge}
-                        </div>
-                        <div class="text-xs text-gray-600 space-y-1">
-                            <p><i class="fa-solid fa-house"></i> ${namaV}</p>
-                            <p><i class="fa-brands fa-whatsapp"></i> ${b.wa}</p>
-                            <p><i class="fa-regular fa-calendar"></i> In: <b>${b.in.split('T')[0]}</b> | Out: <b>${b.out.split('T')[0]}</b></p>
-                            <p class="text-blue-800 font-bold mt-1 text-sm">Total: Rp ${Number(b.total).toLocaleString('id-ID')}</p>
-                        </div>
-                        ${actionBtn}
-                    </div>`;
+        document.getElementById('detail-nama').innerText = v.nama_villa;
+        document.getElementById('detail-lokasi').innerHTML = `<i class="fa-solid fa-location-dot text-red-500"></i> ${v.lokasi}`;
+        document.getElementById('detail-deskripsi').innerText = v.deskripsi || 'Belum ada deskripsi yang ditambahkan untuk villa ini.';
+        
+        let images = (v.gambar_url || '').split(',');
+        let imgHtml = '';
+        if(images[0] && images[0].trim() !== "") {
+            images.forEach(img => {
+                if(img.trim() !== "") imgHtml += `<img src="${img.trim()}" referrerpolicy="no-referrer" class="w-full h-64 object-cover shrink-0 snap-center border-r border-gray-200">`;
             });
-            ws.innerHTML = html + '</div>';
-        } catch (e) { ws.innerHTML = '<p class="text-sm text-red-500">Gagal memuat reservasi.</p>'; }
-    }
-
-    async function konfirmasiBookingAdmin(idBooking) {
-        if(!confirm("Anda yakin ingin mengonfirmasi pesanan ini? Status akan diubah menjadi Confirmed.")) return;
-        
-        let ws = document.getElementById('admin-workspace');
-        ws.innerHTML = '<p class="text-sm text-center">Sedang memproses...</p>';
-        try {
-            let res = await fetch(GAS_URL, { method: 'POST', body: JSON.stringify({ action: 'confirmBooking', id: idBooking }) });
-            alert(await res.text());
-            loadAdminBookings(); 
-        } catch(e) {
-            alert("Gagal mengonfirmasi pesanan.");
-            loadAdminBookings();
+        } else {
+            imgHtml = `<img src="https://placehold.co/600x400/1e3a8a/ffffff?text=Tidak+Ada+Foto" class="w-full h-64 object-cover shrink-0 snap-center">`;
         }
-    }
+        document.getElementById('detail-images').innerHTML = imgHtml;
 
-    function showAdminListVilla() {
-        let ws = document.getElementById('admin-workspace');
-        let html = `
-            <div class="flex justify-between items-center mb-4">
-                <h3 class="font-bold text-blue-900">Daftar Villa</h3>
-                <button onclick="showAdminFormVilla()" class="bg-blue-600 text-white text-xs px-3 py-2 rounded-lg">+ Tambah Baru</button>
-            </div>
-            <div class="space-y-2">`;
-        currentVillas.forEach(v => {
-            html += `
-                <div class="flex justify-between items-center border p-2 bg-white rounded-lg">
-                    <div>
-                        <p class="font-bold text-sm text-blue-900">${v.nama_villa}</p>
-                        <p class="text-xs text-gray-500">${v.lokasi}</p>
-                    </div>
-                    <button onclick="showAdminFormVilla('${v.id}')" class="bg-amber-400 text-amber-900 px-3 py-1 rounded text-xs"><i class="fa-solid fa-pen"></i> Edit</button>
-                </div>`;
-        });
-        if(currentVillas.length === 0) html += '<p class="text-xs text-gray-500">Belum ada villa terdaftar.</p>';
-        ws.innerHTML = html + `</div>`;
-    }
-
-    function showAdminFormVilla(id = null) {
-        editVillaId = id;
-        let v = id ? currentVillas.find(x => x.id === id) : {};
-        let ws = document.getElementById('admin-workspace');
-        ws.innerHTML = `
-            <button onclick="showAdminListVilla()" class="text-blue-600 text-xs mb-3"><i class="fa-solid fa-arrow-left"></i> Batal</button>
-            <h3 class="font-bold mb-3 text-blue-900">${id ? 'Edit Villa' : 'Tambah Villa Baru'}</h3>
-            <input type="text" id="v-nama" value="${v.nama_villa || ''}" placeholder="Nama Villa" class="w-full mb-2 p-2 border rounded text-sm">
-            <input type="text" id="v-lokasi" value="${v.lokasi || ''}" placeholder="Lokasi" class="w-full mb-2 p-2 border rounded text-sm">
-            <input type="text" id="v-gps" value="${v.kordinat_gps || ''}" placeholder="Koordinat GPS (lat,lng)" class="w-full mb-2 p-2 border rounded text-sm">
-            <textarea id="v-deskripsi" placeholder="Deskripsi & Fasilitas Villa" class="w-full mb-2 p-2 border rounded text-sm" rows="3">${v.deskripsi || ''}</textarea>
-            
-            <p class="text-xs font-bold text-gray-700 mb-1">Pengaturan Harga</p>
-            <div class="grid grid-cols-2 gap-2 mb-3 text-xs">
-                <input type="number" id="v-h1" value="${v.harga_senin_kamis || ''}" placeholder="Senin-Kamis" class="p-2 border rounded">
-                <input type="number" id="v-h2" value="${v.harga_jumat || ''}" placeholder="Jumat" class="p-2 border rounded">
-                <input type="number" id="v-h3" value="${v.harga_sabtu || ''}" placeholder="Sabtu" class="p-2 border rounded">
-                <input type="number" id="v-h4" value="${v.harga_minggu || ''}" placeholder="Minggu" class="p-2 border rounded">
-                <input type="number" id="v-h5" value="${v.harga_promo || ''}" placeholder="Promo Khusus" class="p-2 border rounded col-span-2">
-            </div>
-
-            <label class="text-xs text-gray-500 font-bold">Upload Foto (Bisa pilih lebih dari 1 file)</label>
-            ${id ? '<p class="text-[10px] text-amber-600 mb-1">Catatan: Mengupload foto baru akan menimpa foto lama.</p>' : ''}
-            <input type="file" id="v-gambar" accept="image/*" multiple class="w-full mb-4 text-xs p-2 border rounded bg-white">
-            
-            <button onclick="simpanVillaAdmin()" id="btn-save-villa" class="w-full bg-blue-600 text-white py-3 rounded-xl text-sm font-bold shadow">
-                ${id ? 'Simpan Perubahan' : 'Upload & Simpan Villa'}
-            </button>
+        let htmlHarga = `
+            <li class="flex justify-between border-b border-gray-100 pb-1"><span><i class="fa-regular fa-calendar w-5 text-gray-400"></i> Senin-Kamis</span> <b>Rp ${Number(v.harga_senin_kamis||0).toLocaleString('id-ID')}</b></li>
+            <li class="flex justify-between border-b border-gray-100 pb-1"><span><i class="fa-regular fa-calendar w-5 text-gray-400"></i> Jumat</span> <b>Rp ${Number(v.harga_jumat||0).toLocaleString('id-ID')}</b></li>
+            <li class="flex justify-between border-b border-gray-100 pb-1"><span><i class="fa-regular fa-calendar w-5 text-gray-400"></i> Sabtu</span> <b>Rp ${Number(v.harga_sabtu||0).toLocaleString('id-ID')}</b></li>
+            <li class="flex justify-between"><span><i class="fa-regular fa-calendar w-5 text-gray-400"></i> Minggu</span> <b>Rp ${Number(v.harga_minggu||0).toLocaleString('id-ID')}</b></li>
         `;
-    }
-
-    function showAdminSettings() {
-        let ws = document.getElementById('admin-workspace');
-        ws.innerHTML = `
-            <h3 class="font-bold mb-3 text-blue-900">Pengaturan Aplikasi</h3>
-            <input type="text" id="set-nama" value="${appSettings.nama_app || ''}" placeholder="Nama Aplikasi" class="w-full mb-2 p-2 border rounded text-sm">
-            <input type="text" id="set-wa" value="${appSettings.no_wa_admin || ''}" placeholder="No WhatsApp Admin (Format 628...)" class="w-full mb-2 p-2 border rounded text-sm">
-            <textarea id="set-info" placeholder="Info Admin" class="w-full mb-2 p-2 border rounded text-sm">${appSettings.info_admin || ''}</textarea>
-            <label class="text-xs text-gray-500">Upload Logo Baru</label>
-            <input type="file" id="set-logo" accept="image/*" class="w-full mb-3 text-xs p-1 border rounded bg-white">
-            <button onclick="simpanSettingAdmin()" id="btn-save-set" class="w-full bg-green-600 text-white py-2 rounded-xl text-sm font-bold shadow">Simpan Pengaturan</button>
-        `;
-    }
-
-    function readFileAsBase64(file) {
-        return new Promise((resolve, reject) => {
-            let reader = new FileReader();
-            reader.onload = () => resolve(reader.result);
-            reader.onerror = reject;
-            reader.readAsDataURL(file);
-        });
-    }
-
-    async function simpanVillaAdmin() {
-        let nama = document.getElementById('v-nama').value;
-        if(!nama) { alert("Nama villa wajib diisi."); return; }
         
-        let btn = document.getElementById('btn-save-villa');
-        btn.innerText = "Memproses..."; btn.disabled = true;
-
-        let payload = {
-            action: "simpanVilla", id: editVillaId, nama: nama,
-            lokasi: document.getElementById('v-lokasi').value || '-', gps: document.getElementById('v-gps').value,
-            deskripsi: document.getElementById('v-deskripsi').value || '-',
-            h1: document.getElementById('v-h1').value || 0, h2: document.getElementById('v-h2').value || 0,
-            h3: document.getElementById('v-h3').value || 0, h4: document.getElementById('v-h4').value || 0,
-            h5: document.getElementById('v-h5').value || 0, fileArray: []
-        };
-
-        let fileInput = document.getElementById('v-gambar');
-        if(fileInput.files.length > 0) {
-            btn.innerText = "Membaca " + fileInput.files.length + " gambar...";
-            for(let i=0; i<fileInput.files.length; i++) {
-                let f = fileInput.files[i];
-                let b64 = await readFileAsBase64(f);
-                payload.fileArray.push({ filename: f.name, mimeType: f.type, filedata: b64.split(',')[1] });
-            }
+        if(v.harga_promo && v.harga_promo > 0) {
+            htmlHarga += `<li class="flex justify-between text-red-600 mt-2 bg-red-50 p-2 rounded-lg border border-red-100"><span><i class="fa-solid fa-tag w-5"></i> Promo Spesial</span> <b class="text-lg">Rp ${Number(v.harga_promo).toLocaleString('id-ID')}</b></li>`;
         }
-        kirimDataKeServer(payload, btn, "Menyimpan ke sistem...");
-    }
+        document.getElementById('detail-harga').innerHTML = htmlHarga;
 
-    async function simpanSettingAdmin() {
-        let btn = document.getElementById('btn-save-set');
-        btn.innerText = "Memproses..."; btn.disabled = true;
+        document.getElementById('btn-lanjut-pesan').onclick = () => bukaFormBooking(v.id);
         
-        let payload = {
-            action: "simpanSetting", fileArray: [],
-            nama_app: document.getElementById('set-nama').value,
-            wa_admin: document.getElementById('set-wa').value, info_admin: document.getElementById('set-info').value
-        };
-
-        let fileInput = document.getElementById('set-logo');
-        if(fileInput.files.length > 0) {
-            let f = fileInput.files[0];
-            let b64 = await readFileAsBase64(f);
-            payload.fileArray.push({ filename: f.name, mimeType: f.type, filedata: b64.split(',')[1] });
-        }
-        kirimDataKeServer(payload, btn, "Mengupdate Pengaturan...");
+        switchView('view-detail');
     }
 
-    async function kirimDataKeServer(payload, btn, loadingText) {
-        btn.innerText = loadingText;
-        try {
-            let res = await fetch(GAS_URL, { method: 'POST', body: JSON.stringify(payload) });
-            alert(await res.text());
-            
-            // Tunggu sebentar agar gambar sempat terproses di drive sebelum memuat ulang
-            setTimeout(() => {
-                muatPengaturanDanKatalog();
-                showAdminListVilla();
-                btn.innerText = "Selesai"; btn.disabled = false;
-            }, 2000);
-            
-        } catch(e) { 
-            alert("Gagal menyimpan."); 
-            btn.innerText = "Selesai"; btn.disabled = false;
+    function kembaliKeDetail() {
+        if (window.selectedVilla) {
+            switchView('view-detail');
+        } else {
+            switchView('view-home');
         }
     }
 
-    async function prosesLogin() {
-        let u = document.getElementById('log-user').value, p = document.getElementById('log-pass').value;
-        if(!u || !p) return;
-        let res = await fetch(`${GAS_URL}?action=login&u=${u}&p=${p}`);
-        let data = await res.json();
-        if(data.status === 'success') {
-            currentUser = data.user;
-            if(data.user.role === 'admin') switchView('view-admin'); else switchView('view-home');
-        } else { alert("Login Gagal."); }
-    }
-    
-    function logout() { currentUser = null; switchView('view-home'); }
-    function cariLokasiGPS() { alert("Simulasi GPS Berjalan..."); }
-    function mulaiChat() { document.getElementById('chat-msg').removeAttribute('disabled'); document.getElementById('btn-send-chat').removeAttribute('disabled'); }
-    
     function bukaFormBooking(id) {
         let v = currentVillas.find(x => x.id == id);
         if(!v) return;
         window.selectedVilla = v;
         document.getElementById('book-villa-id').value = v.id;
         document.getElementById('book-villa-name').innerText = v.nama_villa;
-        document.getElementById('book-villa-desc').innerText = v.deskripsi || '';
         document.getElementById('book-total').innerText = 'Rp 0';
+        document.getElementById('book-rincian').innerHTML = '<li class="text-gray-400 list-none">Pilih tanggal check-in dan check-out terlebih dahulu.</li>';
         switchView('view-booking');
     }
 
@@ -434,17 +303,29 @@
         let din = document.getElementById('book-in').value, dout = document.getElementById('book-out').value;
         if(!din || !dout || !window.selectedVilla) return;
         let d1 = new Date(din), d2 = new Date(dout);
-        if(d2 <= d1) { alert('Check-Out harus setelah Check-In'); return; }
+        if(d2 <= d1) { alert('Tanggal Check-Out harus lebih dari atau setelah Check-In'); return; }
         
         let total = 0, loopDate = new Date(d1);
+        let rincianHtml = "";
+
         while(loopDate < d2) {
-            let day = loopDate.getDay(), h = window.selectedVilla.harga_senin_kamis;
-            if(window.selectedVilla.harga_promo > 0) h = window.selectedVilla.harga_promo;
-            else if(day === 5) h = window.selectedVilla.harga_jumat;
-            else if(day === 6) h = window.selectedVilla.harga_sabtu;
-            else if(day === 0) h = window.selectedVilla.harga_minggu;
-            total += Number(h); loopDate.setDate(loopDate.getDate() + 1);
+            let day = loopDate.getDay();
+            let h = window.selectedVilla.harga_senin_kamis;
+            let namaHari = "";
+            
+            if(window.selectedVilla.harga_promo > 0) { h = window.selectedVilla.harga_promo; namaHari = "Harga Promo"; }
+            else if(day === 5) { h = window.selectedVilla.harga_jumat; namaHari = "Tarif Jumat"; }
+            else if(day === 6) { h = window.selectedVilla.harga_sabtu; namaHari = "Tarif Sabtu"; }
+            else if(day === 0) { h = window.selectedVilla.harga_minggu; namaHari = "Tarif Minggu"; }
+            else { namaHari = "Tarif Weekday"; }
+            
+            total += Number(h);
+            rincianHtml += `<li>${loopDate.toLocaleDateString('id-ID')} (${namaHari}): Rp ${Number(h).toLocaleString('id-ID')}</li>`;
+            
+            loopDate.setDate(loopDate.getDate() + 1);
         }
+        
+        document.getElementById('book-rincian').innerHTML = rincianHtml;
         document.getElementById('book-total').innerText = `Rp ${total.toLocaleString('id-ID')}`;
         document.getElementById('book-total').setAttribute('data-harga', total);
     }
@@ -456,7 +337,8 @@
             in: document.getElementById('book-in').value, out: document.getElementById('book-out').value,
             total: document.getElementById('book-total').getAttribute('data-harga') || 0
         };
-        if(!data.nama || !data.wa || !data.in || !data.out) { alert("Lengkapi data formulir!"); return; }
+        if(!data.nama || !data.wa || !data.in || !data.out) { alert("Mohon lengkapi formulir pendaftaran!"); return; }
+        if(data.total == 0) { alert("Pilih rentang tanggal yang valid!"); return; }
         
         event.target.innerText = "Memproses Pesanan...";
         
@@ -481,6 +363,227 @@
         }
         event.target.innerText = "Konfirmasi Pesanan";
     }
+
+    // --- FUNGSI ADMIN ---
+    async function loadAdminBookings() {
+        let ws = document.getElementById('admin-workspace');
+        ws.innerHTML = '<p class="text-sm text-center"><i class="fa-solid fa-spinner fa-spin"></i> Memuat daftar reservasi...</p>';
+        try {
+            let res = await fetch(`${GAS_URL}?action=getBookings`);
+            let data = await res.json();
+            let html = '<h3 class="font-bold mb-3 text-blue-900">Daftar Reservasi Terbaru</h3><div class="space-y-3">';
+            if(data.length === 0) html += '<p class="text-xs text-gray-500">Belum ada pesanan masuk.</p>';
+            data.forEach(b => {
+                let v = currentVillas.find(x => x.id == b.villa_id);
+                let namaV = v ? v.nama_villa : 'Villa (Dihapus)';
+                
+                let isPending = b.status === 'pending';
+                let statusBadge = isPending ? '<span class="text-xs bg-amber-100 text-amber-800 px-2 py-1 rounded font-bold border border-amber-200">Menunggu Pembayaran</span>' : '<span class="text-xs bg-green-100 text-green-800 px-2 py-1 rounded font-bold border border-green-200"><i class="fa-solid fa-check"></i> Confirmed</span>';
+                let actionBtn = isPending ? `<button onclick="konfirmasiBookingAdmin('${b.id}')" class="mt-3 w-full bg-green-600 text-white text-sm font-bold px-2 py-2 rounded-lg shadow hover:bg-green-700 transition"><i class="fa-solid fa-check-double"></i> Konfirmasi Pesanan</button>` : '';
+
+                html += `
+                    <div class="border border-blue-200 bg-white p-4 rounded-xl shadow-sm text-sm">
+                        <div class="flex justify-between items-center border-b border-gray-100 pb-2 mb-2">
+                            <b class="text-blue-900 text-base"><i class="fa-solid fa-user-circle"></i> ${b.nama}</b>
+                            ${statusBadge}
+                        </div>
+                        <div class="text-xs text-gray-700 space-y-1.5">
+                            <p><i class="fa-solid fa-house w-4 text-blue-400"></i> ${namaV}</p>
+                            <p><i class="fa-brands fa-whatsapp w-4 text-green-500"></i> <a href="https://wa.me/${b.wa}" target="_blank" class="text-blue-600 underline">${b.wa}</a></p>
+                            <p><i class="fa-regular fa-calendar w-4 text-orange-400"></i> In: <b>${b.in.split('T')[0]}</b> | Out: <b>${b.out.split('T')[0]}</b></p>
+                            <div class="bg-blue-50 p-2 rounded mt-2 border border-blue-100 flex justify-between items-center">
+                                <span>Total Tagihan:</span>
+                                <span class="text-blue-800 font-bold text-base">Rp ${Number(b.total).toLocaleString('id-ID')}</span>
+                            </div>
+                        </div>
+                        ${actionBtn}
+                    </div>`;
+            });
+            ws.innerHTML = html + '</div>';
+        } catch (e) { ws.innerHTML = '<p class="text-sm text-red-500">Gagal memuat reservasi dari database.</p>'; }
+    }
+
+    async function konfirmasiBookingAdmin(idBooking) {
+        if(!confirm("Anda yakin ingin mengonfirmasi pesanan ini? Tamu sudah dianggap membayar.")) return;
+        
+        let ws = document.getElementById('admin-workspace');
+        ws.innerHTML = '<p class="text-sm text-center"><i class="fa-solid fa-spinner fa-spin"></i> Menyimpan konfirmasi...</p>';
+        try {
+            let res = await fetch(GAS_URL, { method: 'POST', body: JSON.stringify({ action: 'confirmBooking', id: idBooking }) });
+            alert(await res.text());
+            loadAdminBookings(); 
+        } catch(e) {
+            alert("Gagal mengonfirmasi pesanan.");
+            loadAdminBookings();
+        }
+    }
+
+    function showAdminListVilla() {
+        let ws = document.getElementById('admin-workspace');
+        let html = `
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="font-bold text-blue-900">Katalog Tersimpan</h3>
+                <button onclick="showAdminFormVilla()" class="bg-blue-600 text-white text-xs px-3 py-2 rounded-lg font-bold shadow">+ Tambah Villa Baru</button>
+            </div>
+            <div class="space-y-2">`;
+        currentVillas.forEach(v => {
+            html += `
+                <div class="flex justify-between items-center border border-gray-200 p-3 bg-white rounded-lg shadow-sm">
+                    <div class="w-3/4">
+                        <p class="font-bold text-sm text-blue-900 truncate">${v.nama_villa}</p>
+                        <p class="text-xs text-gray-500 truncate">${v.lokasi}</p>
+                    </div>
+                    <button onclick="showAdminFormVilla('${v.id}')" class="bg-amber-400 text-amber-900 px-4 py-2 rounded-lg text-xs font-bold hover:bg-amber-500 transition"><i class="fa-solid fa-pen"></i> Edit</button>
+                </div>`;
+        });
+        if(currentVillas.length === 0) html += '<p class="text-xs text-gray-500 text-center">Belum ada villa terdaftar.</p>';
+        ws.innerHTML = html + `</div>`;
+    }
+
+    function showAdminFormVilla(id = null) {
+        editVillaId = id;
+        let v = id ? currentVillas.find(x => x.id === id) : {};
+        let ws = document.getElementById('admin-workspace');
+        ws.innerHTML = `
+            <button onclick="showAdminListVilla()" class="text-blue-600 text-xs mb-3 font-bold"><i class="fa-solid fa-arrow-left"></i> Batal / Kembali</button>
+            <h3 class="font-bold mb-4 text-blue-900 border-b border-gray-200 pb-2">${id ? 'Edit Villa: ' + v.nama_villa : 'Tambah Villa Baru'}</h3>
+            
+            <label class="text-xs text-gray-500 font-bold">Nama & Lokasi</label>
+            <input type="text" id="v-nama" value="${v.nama_villa || ''}" placeholder="Nama Villa" class="w-full mb-2 mt-1 p-2 border rounded text-sm focus:outline-none focus:ring-1 focus:ring-blue-500">
+            <input type="text" id="v-lokasi" value="${v.lokasi || ''}" placeholder="Lokasi Singkat" class="w-full mb-2 p-2 border rounded text-sm focus:outline-none focus:ring-1 focus:ring-blue-500">
+            <input type="text" id="v-gps" value="${v.kordinat_gps || ''}" placeholder="Koordinat GPS Peta (lat,lng)" class="w-full mb-3 p-2 border rounded text-sm focus:outline-none focus:ring-1 focus:ring-blue-500">
+            
+            <label class="text-xs text-gray-500 font-bold">Fasilitas Lengkap</label>
+            <textarea id="v-deskripsi" placeholder="Ketik deskripsi & detail fasilitas villa di sini..." class="w-full mb-4 mt-1 p-2 border rounded text-sm focus:outline-none focus:ring-1 focus:ring-blue-500" rows="4">${v.deskripsi || ''}</textarea>
+            
+            <label class="text-xs text-gray-500 font-bold">Pengaturan Tarif Harian</label>
+            <div class="grid grid-cols-2 gap-2 mb-4 mt-1 text-xs">
+                <input type="number" id="v-h1" value="${v.harga_senin_kamis || ''}" placeholder="Senin-Kamis (Cth: 1500000)" class="p-2 border rounded">
+                <input type="number" id="v-h2" value="${v.harga_jumat || ''}" placeholder="Jumat" class="p-2 border rounded">
+                <input type="number" id="v-h3" value="${v.harga_sabtu || ''}" placeholder="Sabtu" class="p-2 border rounded">
+                <input type="number" id="v-h4" value="${v.harga_minggu || ''}" placeholder="Minggu" class="p-2 border rounded">
+                <input type="number" id="v-h5" value="${v.harga_promo || ''}" placeholder="Promo Khusus (Kosongkan jika tidak ada)" class="p-2 border rounded col-span-2 bg-red-50 text-red-700">
+            </div>
+
+            <label class="text-xs text-gray-500 font-bold block mb-1">Unggah Foto Villa (Bisa lebih dari 1 file)</label>
+            ${id ? '<p class="text-[10px] text-amber-600 mb-2 italic">*Mengupload foto baru akan menghapus dan mengganti foto lama.</p>' : ''}
+            <input type="file" id="v-gambar" accept="image/*" multiple class="w-full mb-5 text-xs p-2 border rounded bg-gray-50">
+            
+            <button onclick="simpanVillaAdmin()" id="btn-save-villa" class="w-full bg-blue-600 text-white py-3 rounded-xl text-sm font-bold shadow-lg hover:bg-blue-700 transition">
+                <i class="fa-solid fa-cloud-arrow-up"></i> ${id ? 'Simpan Perubahan' : 'Upload & Publikasikan Villa'}
+            </button>
+        `;
+    }
+
+    function showAdminSettings() {
+        let ws = document.getElementById('admin-workspace');
+        ws.innerHTML = `
+            <h3 class="font-bold mb-4 text-blue-900 border-b border-gray-200 pb-2">Pengaturan Sistem Aplikasi</h3>
+            
+            <label class="text-xs text-gray-500 font-bold">Informasi Utama</label>
+            <input type="text" id="set-nama" value="${appSettings.nama_app || ''}" placeholder="Nama Aplikasi / Bisnis" class="w-full mt-1 mb-3 p-2 border rounded text-sm">
+            <input type="text" id="set-wa" value="${appSettings.no_wa_admin || ''}" placeholder="No WhatsApp Admin (Awali dengan 62...)" class="w-full mb-3 p-2 border rounded text-sm">
+            <textarea id="set-info" placeholder="Info & Catatan Admin" class="w-full mb-4 p-2 border rounded text-sm" rows="3">${appSettings.info_admin || ''}</textarea>
+            
+            <label class="text-xs text-gray-500 font-bold block mb-1">Upload Logo Aplikasi Baru</label>
+            <input type="file" id="set-logo" accept="image/*" class="w-full mb-5 text-xs p-2 border rounded bg-gray-50">
+            
+            <button onclick="simpanSettingAdmin()" id="btn-save-set" class="w-full bg-green-600 text-white py-3 rounded-xl text-sm font-bold shadow hover:bg-green-700 transition"><i class="fa-solid fa-save"></i> Simpan Pengaturan</button>
+        `;
+    }
+
+    function readFileAsBase64(file) {
+        return new Promise((resolve, reject) => {
+            let reader = new FileReader();
+            reader.onload = () => resolve(reader.result);
+            reader.onerror = reject;
+            reader.readAsDataURL(file);
+        });
+    }
+
+    async function simpanVillaAdmin() {
+        let nama = document.getElementById('v-nama').value;
+        if(!nama) { alert("Nama villa wajib diisi!"); return; }
+        
+        let btn = document.getElementById('btn-save-villa');
+        btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Memproses...`; 
+        btn.disabled = true;
+
+        let payload = {
+            action: "simpanVilla", id: editVillaId, nama: nama,
+            lokasi: document.getElementById('v-lokasi').value || '-', gps: document.getElementById('v-gps').value,
+            deskripsi: document.getElementById('v-deskripsi').value || '-',
+            h1: document.getElementById('v-h1').value || 0, h2: document.getElementById('v-h2').value || 0,
+            h3: document.getElementById('v-h3').value || 0, h4: document.getElementById('v-h4').value || 0,
+            h5: document.getElementById('v-h5').value || 0, fileArray: []
+        };
+
+        let fileInput = document.getElementById('v-gambar');
+        if(fileInput.files.length > 0) {
+            btn.innerText = "Membaca " + fileInput.files.length + " gambar...";
+            for(let i=0; i<fileInput.files.length; i++) {
+                let f = fileInput.files[i];
+                let b64 = await readFileAsBase64(f);
+                payload.fileArray.push({ filename: f.name, mimeType: f.type, filedata: b64.split(',')[1] });
+            }
+        }
+        kirimDataKeServer(payload, btn, "Mengunggah Data ke Sistem...");
+    }
+
+    async function simpanSettingAdmin() {
+        let btn = document.getElementById('btn-save-set');
+        btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Memproses...`; 
+        btn.disabled = true;
+        
+        let payload = {
+            action: "simpanSetting", fileArray: [],
+            nama_app: document.getElementById('set-nama').value,
+            wa_admin: document.getElementById('set-wa').value, info_admin: document.getElementById('set-info').value
+        };
+
+        let fileInput = document.getElementById('set-logo');
+        if(fileInput.files.length > 0) {
+            let f = fileInput.files[0];
+            let b64 = await readFileAsBase64(f);
+            payload.fileArray.push({ filename: f.name, mimeType: f.type, filedata: b64.split(',')[1] });
+        }
+        kirimDataKeServer(payload, btn, "Mengupdate Pengaturan & Logo...");
+    }
+
+    async function kirimDataKeServer(payload, btn, loadingText) {
+        btn.innerText = loadingText;
+        try {
+            let res = await fetch(GAS_URL, { method: 'POST', body: JSON.stringify(payload) });
+            alert(await res.text());
+            
+            setTimeout(() => {
+                muatPengaturanDanKatalog();
+                if(payload.action === 'simpanVilla') showAdminListVilla();
+                else showAdminSettings();
+                btn.innerHTML = `<i class="fa-solid fa-check"></i> Selesai`; 
+                btn.disabled = false;
+            }, 1000);
+            
+        } catch(e) { 
+            alert("Gagal menyimpan ke server database."); 
+            btn.innerText = "Coba Lagi"; btn.disabled = false;
+        }
+    }
+
+    async function prosesLogin() {
+        let u = document.getElementById('log-user').value, p = document.getElementById('log-pass').value;
+        if(!u || !p) return;
+        let res = await fetch(`${GAS_URL}?action=login&u=${u}&p=${p}`);
+        let data = await res.json();
+        if(data.status === 'success') {
+            currentUser = data.user;
+            if(data.user.role === 'admin') switchView('view-admin'); else switchView('view-home');
+        } else { alert("Login Gagal! Periksa kembali Username/Password Anda."); }
+    }
+    
+    function logout() { currentUser = null; switchView('view-home'); }
+    function cariLokasiGPS() { alert("Fitur GPS Radius akan diaktifkan di versi mendatang!"); }
+    function mulaiChat() { document.getElementById('chat-msg').removeAttribute('disabled'); document.getElementById('btn-send-chat').removeAttribute('disabled'); }
 </script>
 </body>
 </html>
