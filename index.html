@@ -28,7 +28,8 @@
     <header class="glass-panel sticky top-0 z-50 px-4 py-3 flex justify-between items-center text-blue-900 shadow-sm">
         <h1 class="font-bold text-xl flex items-center gap-2">
             <i id="ui-app-icon" class="fa-solid fa-house-chimney"></i>
-            <img id="ui-app-logo" src="" class="h-8 w-8 object-cover rounded hidden shadow-sm border border-blue-200">
+            <!-- Ditambahkan referrerpolicy="no-referrer" -->
+            <img id="ui-app-logo" src="" referrerpolicy="no-referrer" class="h-8 w-8 object-cover rounded hidden shadow-sm border border-blue-200">
             <span id="ui-app-name">Nyarivilla</span>
         </h1>
         <div id="user-status" class="text-sm font-semibold">Tamu (Publik)</div>
@@ -131,7 +132,7 @@
 </div>
 
 <script>
-    const GAS_URL = "https://script.google.com/macros/s/AKfycbw7d4DNZeamTmeCqtZdyvDj5Ftf8JTUkcNitf9MO7p258cgQ6l9RXD7Tx2XwgUmoBER/exec";
+    const GAS_URL = "https://script.google.com/macros/s/AKfycbwAicscBf9MQ9nrLK37ZWnQSzp33olRELY_Qbn5pmEepuPad1e8PFf05Ab7c-8-RQ4x/exec";
 
     let currentUser = null;
     let currentVillas = [];
@@ -161,7 +162,7 @@
                 appSettings = data.settings;
                 document.getElementById('ui-app-name').innerText = appSettings.nama_app || "Nyarivilla";
                 if(appSettings.logo_url && appSettings.logo_url.startsWith('http')) {
-                    // Trik '&t=' agar browser selalu memuat gambar terbaru (anti-cache)
+                    // Update: Menampilkan logo dengan bypass cache
                     document.getElementById('ui-app-logo').src = appSettings.logo_url + "&t=" + new Date().getTime();
                     document.getElementById('ui-app-logo').classList.remove('hidden');
                     document.getElementById('ui-app-icon').classList.add('hidden');
@@ -184,10 +185,11 @@
             let imgHtml = `<div class="flex overflow-x-auto snap-x hide-scroll gap-1 bg-gray-100">`;
             if(images[0]) {
                 images.forEach(img => {
-                    if(img.trim() !== "") imgHtml += `<img src="${img.trim()}" class="w-full h-48 object-cover shrink-0 snap-center">`;
+                    // Update: Menambahkan referrerpolicy pada gambar villa
+                    if(img.trim() !== "") imgHtml += `<img src="${img.trim()}" referrerpolicy="no-referrer" class="w-full h-48 object-cover shrink-0 snap-center">`;
                 });
             } else {
-                imgHtml += `<img src="https://placehold.co/600x400/1e3a8a/ffffff?text=Nyarivilla" class="w-full h-48 object-cover shrink-0 snap-center">`;
+                imgHtml += `<img src="https://placehold.co/600x400/1e3a8a/ffffff?text=Nyarivilla" referrerpolicy="no-referrer" class="w-full h-48 object-cover shrink-0 snap-center">`;
             }
             imgHtml += `</div>`;
 
@@ -211,7 +213,6 @@
         });
     }
 
-    // --- FITUR RESERVASI ADMIN DENGAN KONFIRMASI ---
     async function loadAdminBookings() {
         let ws = document.getElementById('admin-workspace');
         ws.innerHTML = '<p class="text-sm text-center">Memuat daftar reservasi...</p>';
@@ -224,7 +225,6 @@
                 let v = currentVillas.find(x => x.id == b.villa_id);
                 let namaV = v ? v.nama_villa : 'Villa Dihapus';
                 
-                // Cek status untuk memunculkan tombol konfirmasi
                 let isPending = b.status === 'pending';
                 let statusBadge = isPending ? '<span class="text-xs bg-amber-100 text-amber-800 px-2 rounded font-bold">Menunggu</span>' : '<span class="text-xs bg-green-100 text-green-800 px-2 rounded font-bold"><i class="fa-solid fa-check"></i> Confirmed</span>';
                 let actionBtn = isPending ? `<button onclick="konfirmasiBookingAdmin('${b.id}')" class="mt-2 w-full bg-green-600 text-white text-xs font-bold px-2 py-2 rounded-lg shadow hover:bg-green-700">Konfirmasi Pembayaran & Pesanan</button>` : '';
@@ -256,14 +256,13 @@
         try {
             let res = await fetch(GAS_URL, { method: 'POST', body: JSON.stringify({ action: 'confirmBooking', id: idBooking }) });
             alert(await res.text());
-            loadAdminBookings(); // Muat ulang daftar
+            loadAdminBookings(); 
         } catch(e) {
             alert("Gagal mengonfirmasi pesanan.");
             loadAdminBookings();
         }
     }
 
-    // --- FITUR KELOLA VILLA ---
     function showAdminListVilla() {
         let ws = document.getElementById('admin-workspace');
         let html = `
@@ -330,7 +329,6 @@
         `;
     }
 
-    // --- FUNGSI PEMBACA FILE ---
     function readFileAsBase64(file) {
         return new Promise((resolve, reject) => {
             let reader = new FileReader();
@@ -392,13 +390,20 @@
         try {
             let res = await fetch(GAS_URL, { method: 'POST', body: JSON.stringify(payload) });
             alert(await res.text());
-            muatPengaturanDanKatalog();
-            showAdminListVilla();
-        } catch(e) { alert("Gagal menyimpan."); }
-        btn.innerText = "Selesai"; btn.disabled = false;
+            
+            // Tunggu sebentar agar gambar sempat terproses di drive sebelum memuat ulang
+            setTimeout(() => {
+                muatPengaturanDanKatalog();
+                showAdminListVilla();
+                btn.innerText = "Selesai"; btn.disabled = false;
+            }, 2000);
+            
+        } catch(e) { 
+            alert("Gagal menyimpan."); 
+            btn.innerText = "Selesai"; btn.disabled = false;
+        }
     }
 
-    // LOGIKA LOGIN & BOOKING
     async function prosesLogin() {
         let u = document.getElementById('log-user').value, p = document.getElementById('log-pass').value;
         if(!u || !p) return;
@@ -444,7 +449,6 @@
         document.getElementById('book-total').setAttribute('data-harga', total);
     }
     
-    // PEMESANAN DAN OTOMATIS REDIRECT KE WA ADMIN
     async function prosesBooking() {
         let data = {
             action: 'bookVilla', villa_id: document.getElementById('book-villa-id').value,
@@ -460,7 +464,6 @@
             await fetch(GAS_URL, { method: 'POST', body: JSON.stringify(data) });
             alert("Pemesanan Berhasil Disimpan di Sistem!"); 
             
-            // Generate pesan notifikasi otomatis untuk WA
             let waAdmin = appSettings.no_wa_admin || "628000000000";
             let teksWa = `Halo Admin Nyarivilla, saya *${data.nama}* baru saja memesan *${window.selectedVilla.nama_villa}*.\n\n`
                        + `Rincian Pesanan:\n`
@@ -470,8 +473,6 @@
                        + `Mohon info untuk proses pembayarannya.`;
             
             let urlWa = `https://wa.me/${waAdmin}?text=${encodeURIComponent(teksWa)}`;
-            
-            // Redirect tamu ke WhatsApp Admin
             window.open(urlWa, '_blank');
             
             switchView('view-home');
